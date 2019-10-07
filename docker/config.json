@@ -1,0 +1,51 @@
+{
+  "schema": "iglu:com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0",
+  "data": [
+    {
+      "name": "PassThrough",
+      "error": "Could not find schema with key iglu:com.acme/my_schema/jsonschema/1-0-0 in any repository"
+    },
+    {
+      "name": "ReplaceInQueryString",
+      "error": "Could not find schema with key iglu:com.snowplowanalytics.snowplow/screen_vie/jsonschema/1-0-0 in any repository",
+      "toReplace": "schema=iglu%3Acom.snowplowanalytics.snowplow%2Fscreen_vie%2Fjsonschema%2F1-0-0",
+      "replacement": "schema=iglu%3Acom.snowplowanalytics.snowplow%2Fscreen_view%2Fjsonschema%2F1-0-0"
+    },
+    {
+      "name": "RemoveFromQueryString",
+      "error": "Exception extracting name-value pairs from querystring",
+      "toRemove": "\\{.*\\}"
+    },
+    {
+      "name": "ReplaceInBase64FieldInQueryString",
+      "error": "instance type (string) does not match any allowed primitive type (allowed: [\"integer\"])\n    level: \"error\"\n    schema: {\"loadingURI\":\"#\",\"pointer\":\"/properties/sessionIndex\"",
+      "base64Field": "ue_px",
+      "toReplace": "\"sessionIndex\":\"(\\d+)\"",
+      "replacement": "\"sessionIndex\":$1"
+    },
+    {
+      "name": "ReplaceInBody",
+      "error": "instance type (integer) does not match any allowed primitive type (allowed: [\"string\"])\n    level: \"error\"\n    schema: {\"loadingURI\":\"#\",\"pointer\":\"/items/properties/dtm\"",
+      "toReplace": "\"dtm\":(\\d+)",
+      "replacement": "\"dtm\":\"$1\""
+    },
+    {
+      "name": "RemoveFromBody",
+      "error": "object instance has properties which are not allowed by the schema: [\"test\"]",
+      "toRemove": "\"test\":\".*\",?"
+    },
+    {
+      "name": "ReplaceInBase64FieldInBody",
+      "error": "instance type (string) does not match any allowed primitive type (allowed: [\"integer\"])\n    level: \"error\"\n    schema: {\"loadingURI\":\"#\",\"pointer\":\"/properties/sessionIndex\"",
+      "base64Field": "ue_px",
+      "toReplace": "\"sessionIndex\":\"(\\d+)\"",
+      "replacement": "\"sessionIndex\":$1"
+    },
+    {
+      "name": "ReplaceInPath",
+      "error": "Payload with vendor com.iglu and version v1 not supported",
+      "toReplace": "com.iglu/v1",
+      "replacement": "com.snowplowanalytics.iglu/v1"
+    }
+  ]
+}

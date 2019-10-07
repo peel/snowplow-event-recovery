@@ -147,6 +147,37 @@ lazy val beam = project
   ).dependsOn(core % "compile->compile;test->test")
   .enablePlugins(JavaAppPackaging)
 
+lazy val flinkVersion = "1.9.0"
+
+lazy val flink = project
+  .settings(packageName := "snowplow-event-recovery-flink")
+  .settings(buildSettings)
+  .settings(
+    description := "Snowplow event recovery job for AWS",
+    resolvers += Resolver.mavenLocal,
+    libraryDependencies ++= Seq(
+      "com.monovore" %% "decline" % declineVersion,
+      "org.apache.flink" %% "flink-scala" % flinkVersion % "provided",
+      "org.apache.flink" %% "flink-streaming-scala" % flinkVersion % "provided",
+      "org.apache.flink" % "flink-s3-fs-hadoop" % flinkVersion % "provided",
+      "org.apache.flink" %% "flink-connector-kinesis" % flinkVersion,
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-generic" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion
+    )
+  ).settings(
+    assemblyJarName in assembly := { packageName.value + "-" + version.value + ".jar" },
+    assemblyOption in assembly  := (assemblyOption in assembly).value.copy(includeScala = false),
+    // mainClass in assembly := Some("com.snowplowanalytics.event.recovery.RecoveryJob")
+  ).settings(
+    Compile / run  := Defaults.runTask(Compile / fullClasspath,
+                                       Compile / run / mainClass,
+                                       Compile / run / runner
+    ).evaluated,
+    Compile / run / fork := true,
+    Global / cancelable := true
+  ).dependsOn(core % "compile->compile;test->test")
+
 lazy val repl: Project = Project(
   "repl",
   file(".repl")

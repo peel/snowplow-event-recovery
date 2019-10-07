@@ -1,0 +1,100 @@
+version: "3"
+services:
+  job:
+    image: flink:1.9.0-scala_2.11
+    command: "flink run -d -p 2 /opt/job.jar --input bad-rows/ --output recovered --config ewogICJzY2hlbWEiOiAiaWdsdTpjb20uc25vd3Bsb3dhbmFseXRpY3Muc25vd3Bsb3cvcmVjb3Zlcmllcy9qc29uc2NoZW1hLzEtMC0wIiwKICAiZGF0YSI6IFsKICAgIHsKICAgICAgIm5hbWUiOiAiUGFzc1Rocm91Z2giLAogICAgICAiZXJyb3IiOiAiQ291bGQgbm90IGZpbmQgc2NoZW1hIHdpdGgga2V5IGlnbHU6Y29tLmFjbWUvbXlfc2NoZW1hL2pzb25zY2hlbWEvMS0wLTAgaW4gYW55IHJlcG9zaXRvcnkiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJSZXBsYWNlSW5RdWVyeVN0cmluZyIsCiAgICAgICJlcnJvciI6ICJDb3VsZCBub3QgZmluZCBzY2hlbWEgd2l0aCBrZXkgaWdsdTpjb20uc25vd3Bsb3dhbmFseXRpY3Muc25vd3Bsb3cvc2NyZWVuX3ZpZS9qc29uc2NoZW1hLzEtMC0wIGluIGFueSByZXBvc2l0b3J5IiwKICAgICAgInRvUmVwbGFjZSI6ICJzY2hlbWE9aWdsdSUzQWNvbS5zbm93cGxvd2FuYWx5dGljcy5zbm93cGxvdyUyRnNjcmVlbl92aWUlMkZqc29uc2NoZW1hJTJGMS0wLTAiLAogICAgICAicmVwbGFjZW1lbnQiOiAic2NoZW1hPWlnbHUlM0Fjb20uc25vd3Bsb3dhbmFseXRpY3Muc25vd3Bsb3clMkZzY3JlZW5fdmlldyUyRmpzb25zY2hlbWElMkYxLTAtMCIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIlJlbW92ZUZyb21RdWVyeVN0cmluZyIsCiAgICAgICJlcnJvciI6ICJFeGNlcHRpb24gZXh0cmFjdGluZyBuYW1lLXZhbHVlIHBhaXJzIGZyb20gcXVlcnlzdHJpbmciLAogICAgICAidG9SZW1vdmUiOiAiXFx7LipcXH0iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJSZXBsYWNlSW5CYXNlNjRGaWVsZEluUXVlcnlTdHJpbmciLAogICAgICAiZXJyb3IiOiAiaW5zdGFuY2UgdHlwZSAoc3RyaW5nKSBkb2VzIG5vdCBtYXRjaCBhbnkgYWxsb3dlZCBwcmltaXRpdmUgdHlwZSAoYWxsb3dlZDogW1wiaW50ZWdlclwiXSlcbiAgICBsZXZlbDogXCJlcnJvclwiXG4gICAgc2NoZW1hOiB7XCJsb2FkaW5nVVJJXCI6XCIjXCIsXCJwb2ludGVyXCI6XCIvcHJvcGVydGllcy9zZXNzaW9uSW5kZXhcIiIsCiAgICAgICJiYXNlNjRGaWVsZCI6ICJ1ZV9weCIsCiAgICAgICJ0b1JlcGxhY2UiOiAiXCJzZXNzaW9uSW5kZXhcIjpcIihcXGQrKVwiIiwKICAgICAgInJlcGxhY2VtZW50IjogIlwic2Vzc2lvbkluZGV4XCI6JDEiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJSZXBsYWNlSW5Cb2R5IiwKICAgICAgImVycm9yIjogImluc3RhbmNlIHR5cGUgKGludGVnZXIpIGRvZXMgbm90IG1hdGNoIGFueSBhbGxvd2VkIHByaW1pdGl2ZSB0eXBlIChhbGxvd2VkOiBbXCJzdHJpbmdcIl0pXG4gICAgbGV2ZWw6IFwiZXJyb3JcIlxuICAgIHNjaGVtYToge1wibG9hZGluZ1VSSVwiOlwiI1wiLFwicG9pbnRlclwiOlwiL2l0ZW1zL3Byb3BlcnRpZXMvZHRtXCIiLAogICAgICAidG9SZXBsYWNlIjogIlwiZHRtXCI6KFxcZCspIiwKICAgICAgInJlcGxhY2VtZW50IjogIlwiZHRtXCI6XCIkMVwiIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiUmVtb3ZlRnJvbUJvZHkiLAogICAgICAiZXJyb3IiOiAib2JqZWN0IGluc3RhbmNlIGhhcyBwcm9wZXJ0aWVzIHdoaWNoIGFyZSBub3QgYWxsb3dlZCBieSB0aGUgc2NoZW1hOiBbXCJ0ZXN0XCJdIiwKICAgICAgInRvUmVtb3ZlIjogIlwidGVzdFwiOlwiLipcIiw/IgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiUmVwbGFjZUluQmFzZTY0RmllbGRJbkJvZHkiLAogICAgICAiZXJyb3IiOiAiaW5zdGFuY2UgdHlwZSAoc3RyaW5nKSBkb2VzIG5vdCBtYXRjaCBhbnkgYWxsb3dlZCBwcmltaXRpdmUgdHlwZSAoYWxsb3dlZDogW1wiaW50ZWdlclwiXSlcbiAgICBsZXZlbDogXCJlcnJvclwiXG4gICAgc2NoZW1hOiB7XCJsb2FkaW5nVVJJXCI6XCIjXCIsXCJwb2ludGVyXCI6XCIvcHJvcGVydGllcy9zZXNzaW9uSW5kZXhcIiIsCiAgICAgICJiYXNlNjRGaWVsZCI6ICJ1ZV9weCIsCiAgICAgICJ0b1JlcGxhY2UiOiAiXCJzZXNzaW9uSW5kZXhcIjpcIihcXGQrKVwiIiwKICAgICAgInJlcGxhY2VtZW50IjogIlwic2Vzc2lvbkluZGV4XCI6JDEiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJSZXBsYWNlSW5QYXRoIiwKICAgICAgImVycm9yIjogIlBheWxvYWQgd2l0aCB2ZW5kb3IgY29tLmlnbHUgYW5kIHZlcnNpb24gdjEgbm90IHN1cHBvcnRlZCIsCiAgICAgICJ0b1JlcGxhY2UiOiAiY29tLmlnbHUvdjEiLAogICAgICAicmVwbGFjZW1lbnQiOiAiY29tLnNub3dwbG93YW5hbHl0aWNzLmlnbHUvdjEiCiAgICB9CiAgXQp9Cg=="
+    depends_on:
+      - jobmanager
+      - setup-resources
+    volumes:
+      - ./conf:/opt/flink/conf
+      - ./config-b64.json:/config.json
+      - /Users/peel/wrk/sp/flink/flink-dist/target/flink-1.9.0-bin/flink-1.9.0/opt/flink-s3-fs-hadoop-1.9.0.jar:/opt/flink/plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.9.0.jar
+      - ../flink/target/scala-2.11/snowplow-event-recovery-flink-0.1.1.jar:/opt/job.jar
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+      
+  jobmanager:
+    image: flink:1.9-scala_2.11
+    command: "jobmanager.sh start-foreground"
+    ports:
+      - 8081:8081
+    volumes:
+      - ./conf:/opt/flink/conf
+      - /Users/peel/wrk/sp/flink/flink-dist/target/flink-1.9.0-bin/flink-1.9.0/opt/flink-s3-fs-hadoop-1.9.0.jar:/opt/flink/plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.9.0.jar
+      - flink-checkpoint-directory:/tmp/flink-checkpoint-directory
+      - /tmp/flink-savepoints-directory:/tmp/flink-savepoints-directory
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+      - AWS_SECRET_ACCESS_KEY=secret-access-key
+      - AWS_SECRET_KEY=secret-access-key
+      - AWS_ACCESS_KEY_ID=access-key
+      - AWS_ACCESS_KEY=access-key
+      - AWS_SECURITY_TOKEN=security-token
+      - AWS_SESSION_TOKEN=session-token
+      - AWS_ENDPOINT=http://localstack:4568
+
+  taskmanager:
+    image: flink:1.9-scala_2.11
+    depends_on:
+      - jobmanager
+    command: "taskmanager.sh start-foreground"
+    volumes:
+      - ./conf:/opt/flink/conf
+      - /Users/peel/wrk/sp/flink/flink-dist/target/flink-1.9.0-bin/flink-1.9.0/opt/flink-s3-fs-hadoop-1.9.0.jar:/opt/flink/plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.9.0.jar
+      - flink-checkpoint-directory:/tmp/flink-checkpoint-directory
+      - /tmp/flink-savepoints-directory:/tmp/flink-savepoints-directory
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+      - AWS_SECRET_KEY=secret-key
+      - AWS_SECRET_ACCESS_KEY=secret-key      
+      - AWS_ACCESS_KEY_ID=access-key
+      - AWS_ACCESS_KEY=access-key
+      - AWS_SECURITY_TOKEN=security-token
+      - AWS_SESSION_TOKEN=session-token
+      - AWS_ENDPOINT=http://localstack:4568
+      
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4569-4584:4569-4584"
+      - "${PORT_WEB_UI-8888}:${PORT_WEB_UI-8888}"
+    environment:
+      - SERVICES=s3
+      - DEFAULT_REGION=eu-central-1
+      - DATA_DIR=/tmp/localstack/data
+      - PORT_WEB_UI=8888
+      - KINESIS_ERROR_PROBABILITY=0
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - USE_SSL=false
+    volumes:
+      - ./.localstack:/tmp/localstack
+      
+  kinesis:
+    image: instructure/kinesalite
+    ports:
+      - "4568:4567"
+    command: "--ssl"
+    
+  setup-resources:
+    image: mesosphere/aws-cli
+    environment:
+      - AWS_ACCESS_KEY_ID=access-key
+      - AWS_SECRET_ACCESS_KEY=secret-key
+      - AWS_DEFAULT_REGION=eu-central-1
+    entrypoint: /bin/sh -c
+    volumes:
+      - ./sample.json:/tmp/sample.json
+    command: >
+      "
+        sleep 10;
+        aws kinesis create-stream --endpoint-url=https://kinesis:4567 --no-verify-ssl --stream-name recovered --shard-count 1;
+        aws s3 mb --endpoint-url=http://localstack:4572 s3://bad-rows;
+        aws s3 --endpoint-url=http://localstack:4572 cp /tmp/sample.json s3://bad-rows/sample.json;
+      "
+    depends_on:
+      - kinesis
+      - localstack      
+
+volumes:
+  flink-checkpoint-directory:
