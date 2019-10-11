@@ -3,26 +3,28 @@ package com.snowplowanalytics.snowplow.event.recovery
 import java.util.Properties
 
 import org.apache.flink.util.Collector
-import org.apache.flink.api.common.serialization._
-import org.apache.flink.streaming.api.scala._
+import org.apache.flink.api.common.serialization.SimpleStringSchema
+import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.connectors.kinesis._
 import org.apache.flink.streaming.connectors.kinesis.config._
 import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 import cats.syntax.apply._
 import cats.syntax.either._
 import com.monovore.decline._
-import mymodel._
-import mymodel.implicits._
+import com.snowplowanalytics.snowplow.badrows._
+import recoverable.Recoverable._, recoverable.Recoverable.ops._
+import config._
+import typeinfo._
+import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.CollectorPayload
 
-object mymodel {
-  case class BadRow(name: String, error: String)
-  object implicits {
-    implicit val badRowT = TypeInformation.of(classOf[BadRow])
-    implicit val optionBadRowT = TypeInformation.of(classOf[Option[BadRow]])
-    implicit val stringT = TypeInformation.of(classOf[String])
-  }
+object typeinfo {
+  // TODO Flink's macros cause unused import on `package`
+  implicit val badRowT: TypeInformation[BadRow] = TypeInformation.of(classOf[BadRow])
+  implicit val eitherAForAFT: TypeInformation[Either[BadRow, BadRow.AdapterFailures]] = TypeInformation.of(classOf[Either[BadRow, BadRow.AdapterFailures]])
+  implicit val payloadCPT: TypeInformation[Payload.CollectorPayload] = TypeInformation.of(classOf[Payload.CollectorPayload])
+  implicit val collectorPayloadT: TypeInformation[CollectorPayload] = TypeInformation.of(classOf[CollectorPayload])
+  implicit val stringT: TypeInformation[String] = TypeInformation.of(classOf[String])
 }
 
 object Main extends CommandApp(
@@ -31,18 +33,17 @@ object Main extends CommandApp(
   main = {
     val input = Opts.option[String]("input", help = "Input S3 path")
     val output = Opts.option[String]("output", help = "Output Kinesis topic")
-    val recoveryScenarios = Opts.option[String](
+    val config = Opts.option[String](
       "config",
       help = "Base64 config with schema com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0"
     ).mapValidated(utils.decodeBase64(_).toValidatedNel)
-      .mapValidated(json => utils.validateConfiguration(json).toValidatedNel.map(_ => json))
-      .mapValidated(utils.parseRecoveryScenarios(_).toValidatedNel)
-    (input, output, recoveryScenarios).mapN { (i, o, rss) => RecoveryJob.run(i, o, rss) }
+     .mapValidated(utils.loadConfig(_).toValidatedNel)
+    (input, output, config).mapN { (i, o, c) => RecoveryJob.run(i, o, c) }
   }
 )
 
 object RecoveryJob {
-  def run(input: String, output: String, recoveryScenarios: List[RecoveryScenario]): Unit = {
+  def run(input: String, output: String, config: Config): Unit = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     val config = {
       val producerConfig = new Properties()
@@ -64,13 +65,24 @@ object RecoveryJob {
       producer
     }
 
-    val lines = env
+    // TODO can this be done better with Flink?
+    def unpack[A <: BadRow](cfg: Config, b: BadRow) = b match {
+      case r: BadRow.AdapterFailures => r.recover(cfg)
+      case l => Left(l)
+    }
+
+    // FIXME load from json
+    val cfg: Config = Map(AdapterFailures -> List(Replacement(Body, "aaa", "new")))
+    def lines = env
       .readFileStream(s"s3://$input")
       .flatMap(FlatMapDeserialize)
-      .filter(_.isDefined)
-      .map(_.asJson.noSpaces)
+      .map(unpack(cfg, _))
+      .filter(_.isRight)
+      .map(_.right.get.payload)
+      .map(utils.coerce(_))
 
     lines
+      .map(utils.thriftSer)
       .addSink(kinesis)
 
     lines
@@ -80,14 +92,10 @@ object RecoveryJob {
   }
 }
 
-object FlatMapDeserialize extends RichFlatMapFunction[String, Option[BadRow]] {
-  override def flatMap(str: String, out: Collector[Option[BadRow]]): Unit = {
-    out.collect(badRow(str))
-  }
-  //2.11
-  def badRow(v: String) = decode[BadRow](v) match {
-    case Right(a) => Some(a)
-    case Left(err) => None
+object FlatMapDeserialize extends RichFlatMapFunction[String, BadRow] {
+  override def flatMap(str: String, out: Collector[BadRow]): Unit = {
+    badRow(str).foreach(out.collect)
   }
 
+  def badRow(v: String) = io.circe.parser.decode[BadRow](v).toOption
 }

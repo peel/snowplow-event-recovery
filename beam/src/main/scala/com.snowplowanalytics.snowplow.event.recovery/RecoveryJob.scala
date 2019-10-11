@@ -77,9 +77,9 @@ object RecoveryJob {
       .withName("parse-bad-rows")
       .map(decode[BadRow])
       .withName("filter-bad-rows")
-      .collect { case Right(br) if br.isAffected(recoveryScenarios) =>
+      .collect { case Right(br) if BadRow.isAffected(recoveryScenarios, br) =>
         recoveryScenarios
-          .filter(rs => br.isAffected(List(rs)))
+          .filter(rs => BadRow.isAffected(List(rs), br))
           .foreach { rs =>
             ScioMetrics
               .counter("snowplow", s"bad_rows_recovered_${rs.getClass.getSimpleName}")

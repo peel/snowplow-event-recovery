@@ -1,0 +1,9 @@
+{
+  "AdapterFailures" : [
+    {
+      "context" : "Body",
+      "matcher" : "aaa",
+      "replacement" : "new"
+    }
+  ]
+}

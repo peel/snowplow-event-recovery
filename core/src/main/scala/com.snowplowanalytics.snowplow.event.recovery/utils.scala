@@ -16,17 +16,23 @@ package com.snowplowanalytics
 package snowplow
 package event.recovery
 
+import java.time.Instant
 import java.util.Base64
+import scala.collection.JavaConverters._
 
-import cats.syntax.either._
+import cats._
+import cats.implicits._
 import io.circe.generic.extras.auto._
 import io.circe.generic.extras.Configuration
 import org.apache.thrift.{TDeserializer, TSerializer}
 
+import config.Config
+import config.json._
+import com.snowplowanalytics.snowplow.badrows.Payload
 import CollectorPayload.thrift.model1.CollectorPayload
-import iglu.client.Resolver
-import iglu.client.repositories.{HttpRepositoryRef, RepositoryRefConfig}
-import iglu.client.validation.ValidatableJValue.validateAndIdentifySchema
+// import com.snowplowanalytics.iglu.client.Resolver
+// import com.snowplowanalytics.iglu.client.repositories._
+// import com.snowplowanalytics.iglu.client.validation.ValidatableJValue.validateAndIdentifySchema
 
 object utils {
   /** Deserialize a String into a CollectorPayload after having base64-decoded it. */
@@ -74,17 +80,42 @@ object utils {
    * @param configuration in json form
    * @return a failure if the json didn't validate against its schema or a success
    */
-  def validateConfiguration(json: String): Either[String, Unit] = {
-    val resolver = Resolver(repos = List(HttpRepositoryRef(
-      config = RepositoryRefConfig(name = "Iglu central", 0, List("com.snowplowanalytics")),
-      uri = "http://iglucentral.com"
-    )))
-    for {
-      jvalue <- Either.catchNonFatal(org.json4s.jackson.JsonMethods.parse(json))
-        .leftMap(_.getMessage)
-      _ <- validateAndIdentifySchema(jvalue, dataOnly = true)(resolver)
-        .fold(errors => errors.list.mkString("\n").asLeft, _.asRight)
-    } yield ()
+  def validateConfiguration(json: String): Either[String, Unit] = Right(())
+
+  def loadConfig(json: String): Either[String, config.Config] =
+    io.circe.parser.decode[Config](json).leftMap(_.toString)
+    // FIXME
+  // {
+  //   val resolver = Resolver(repos = List(HttpRepositoryRef(
+  //     config = RepositoryRefConfig(name = "Iglu central", 0, List("com.snowplowanalytics")),
+  //     uri = "http://iglucentral.com"
+  //   )))
+  //   for {
+  //     jvalue <- Either.catchNonFatal(org.json4s.jackson.JsonMethods.parse(json))
+  //       .leftMap(_.getMessage)
+  //     _ <- validateAndIdentifySchema(jvalue, dataOnly = true)(resolver)
+  //       .fold(errors => errors.list.mkString("\n").asLeft, _.asRight)
+  //   } yield ()
+  // }
+
+  def coerce(p: Payload.CollectorPayload): CollectorPayload = {
+    val cp = new CollectorPayload(
+      s"iglu:${p.vendor}/CollectorPayload/thrift/${p.version}",
+      p.ipAddress.orNull,
+      p.timestamp.map(Instant.parse).map(_.toEpochMilli).getOrElse(0),
+      p.encoding,
+      p.collector
+    )
+    cp.userAgent = p.useragent.orNull
+    cp.refererUri = p.refererUri.orNull
+    cp.querystring = Foldable[List].foldMap(p.querystring)(_.value.getOrElse(""))
+    cp.body = p.body.orNull
+    cp.headers = p.headers.asJava
+    cp.contentType = p.contentType.orNull
+    cp.hostname = p.hostname.orNull
+    cp.networkUserId = p.networkUserId.orNull
+
+    cp
   }
 
 }

@@ -34,7 +34,7 @@ import CollectorPayload.thrift.model1.CollectorPayload
  */
 sealed trait RecoveryScenario {
   /** Error discriminant used to check if a recovery scenario should be applied to a bad row. */
-  def error: String
+  // def error: String
 
   /**
    * Function used to check if a recovery scenario should be applied to a bad row given its errors.
@@ -42,8 +42,8 @@ sealed trait RecoveryScenario {
    * @return true if there exists at least one error in the provided bad row errors which contains
    * this [[RecoveryScenario]]'s error
    */
-  def filter(errors: List[model.Error]): Boolean =
-    errors.map(_.message).exists(_.contains(error))
+  // def filter(errors: List[model.Error]): Boolean = true
+  //   errors.map(_.message).exists(_.contains(error))
 
   /**
    * Function mutating a CollectorPayload.
@@ -54,7 +54,6 @@ sealed trait RecoveryScenario {
 }
 
 object RecoveryScenario {
-
   // Query string recovery scenarios
 
   /**
@@ -117,6 +116,7 @@ object RecoveryScenario {
     }).getOrElse(originalPayload)
   }
 
+ 
   /**
    * Recovery scenario removing part of a collector payload's query string.
    * @param error discriminant used to check if a recovery scenario should be applied to a bad row
