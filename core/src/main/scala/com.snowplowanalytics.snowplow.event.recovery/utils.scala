@@ -98,24 +98,27 @@ object utils {
   //   } yield ()
   // }
 
-  def coerce(p: Payload.CollectorPayload): CollectorPayload = {
-    val cp = new CollectorPayload(
-      s"iglu:${p.vendor}/CollectorPayload/thrift/${p.version}",
-      p.ipAddress.orNull,
-      p.timestamp.map(Instant.parse).map(_.toEpochMilli).getOrElse(0),
-      p.encoding,
-      p.collector
-    )
-    cp.userAgent = p.useragent.orNull
-    cp.refererUri = p.refererUri.orNull
-    cp.querystring = Foldable[List].foldMap(p.querystring)(_.value.getOrElse(""))
-    cp.body = p.body.orNull
-    cp.headers = p.headers.asJava
-    cp.contentType = p.contentType.orNull
-    cp.hostname = p.hostname.orNull
-    cp.networkUserId = p.networkUserId.orNull
-
-    cp
+  // FIXME map different payloads to collector payload
+  def coerce(p: Payload): CollectorPayload = p match {
+    case p: Payload.CollectorPayload => {
+      val cp = new CollectorPayload(
+        s"iglu:${p.vendor}/CollectorPayload/thrift/${p.version}",
+        p.ipAddress.orNull,
+        p.timestamp.map(Instant.parse).map(_.toEpochMilli).getOrElse(0),
+        p.encoding,
+        p.collector
+      )
+      cp.userAgent = p.useragent.orNull
+      cp.refererUri = p.refererUri.orNull
+      cp.querystring = Foldable[List].foldMap(p.querystring)(_.value.getOrElse(""))
+      cp.body = p.body.orNull
+      cp.headers = p.headers.asJava
+      cp.contentType = p.contentType.orNull
+      cp.hostname = p.hostname.orNull
+      cp.networkUserId = p.networkUserId.orNull
+      cp
+    }
+    case _ => null
   }
 
 }

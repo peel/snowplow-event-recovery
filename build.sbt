@@ -44,12 +44,16 @@ lazy val circeDependencies = Seq(
   "circe-generic-extras",
   "circe-parser"
 ).map("io.circe" %% _ % circeVersion)
+lazy val dynamicVersion = "0.1.1"
 
 lazy val core = project
   .settings(moduleName := "snowplow-event-recovery")
   .settings(buildSettings)
   .settings(
-    resolvers += "Snowplow Analytics Maven repo" at "http://maven.snplow.com/releases/",
+    resolvers ++= Seq(
+      "Snowplow Analytics Maven repo" at "http://maven.snplow.com/releases/",
+      Resolver.bintrayRepo("reug", "maven")
+    ),
     libraryDependencies ++= Seq(
       // thrift is only used for writing into kinesis
       "com.snowplowanalytics" % "collector-payload-1" % thriftSchemaVersion,
@@ -59,6 +63,7 @@ lazy val core = project
       "io.circe" %% "circe-optics" % circeOpticsVersion,
       "com.github.julien-truffaut" %% "monocle-macro" % monocleVersion,
       "com.snowplowanalytics" %% "iglu-scala-client" % igluClientVersion,
+      "com.github.reugn" %% "dynamic" % dynamicVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion % "test",
       "org.scalacheck" %% "scalacheck" % scalacheckVersion % "test",
       "com.snowplowanalytics" %% "scalacheck-schema" % scalacheckSchemaVersion % "test",

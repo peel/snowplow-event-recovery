@@ -16,13 +16,17 @@ import com.snowplowanalytics.snowplow.badrows._
 import recoverable.Recoverable._, recoverable.Recoverable.ops._
 import config._
 import typeinfo._
+import recoverable._, Recoverable.ops._
 import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.CollectorPayload
 
 object typeinfo {
   // TODO Flink's macros cause unused import on `package`
   implicit val badRowT: TypeInformation[BadRow] = TypeInformation.of(classOf[BadRow])
-  implicit val eitherAForAFT: TypeInformation[Either[BadRow, BadRow.AdapterFailures]] = TypeInformation.of(classOf[Either[BadRow, BadRow.AdapterFailures]])
+  implicit val eitherAForAFT: TypeInformation[Either[BadRow, BadRow]] = TypeInformation.of(classOf[Either[BadRow, BadRow]])
+  implicit val eitherBBT: TypeInformation[Either[BadRow, BadRow.AdapterFailures]] = TypeInformation.of(classOf[Either[BadRow, BadRow.AdapterFailures]])
+  implicit val payloadT: TypeInformation[Payload] = TypeInformation.of(classOf[Payload])
   implicit val payloadCPT: TypeInformation[Payload.CollectorPayload] = TypeInformation.of(classOf[Payload.CollectorPayload])
+  implicit val eitherPPT: TypeInformation[Either[BadRow, Payload]] = TypeInformation.of(classOf[Either[BadRow, Payload]])
   implicit val collectorPayloadT: TypeInformation[CollectorPayload] = TypeInformation.of(classOf[CollectorPayload])
   implicit val stringT: TypeInformation[String] = TypeInformation.of(classOf[String])
 }
@@ -43,7 +47,7 @@ object Main extends CommandApp(
 )
 
 object RecoveryJob {
-  def run(input: String, output: String, config: Config): Unit = {
+  def run(input: String, output: String, cfg: Config): Unit = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     val config = {
       val producerConfig = new Properties()
@@ -66,19 +70,20 @@ object RecoveryJob {
     }
 
     // TODO can this be done better with Flink?
-    def unpack[A <: BadRow](cfg: Config, b: BadRow) = b match {
-      case r: BadRow.AdapterFailures => r.recover(cfg)
+    def unpack(cfg: Config, b: BadRow): Either[BadRow, Payload] = b match {
+      case r: BadRow.AdapterFailures => r.recover(cfg).map(_.payload)
+      case r: BadRow.TrackerProtocolViolations => r.recover(cfg).map(_.payload)
+      case r: BadRow.SchemaViolations => r.recover(cfg).map(_.payload)
+      case r: BadRow.EnrichmentFailures => r.recover(cfg).map(_.payload)
       case l => Left(l)
     }
 
-    // FIXME load from json
-    val cfg: Config = Map(AdapterFailures -> List(Replacement(Body, "aaa", "new")))
     def lines = env
       .readFileStream(s"s3://$input")
       .flatMap(FlatMapDeserialize)
       .map(unpack(cfg, _))
       .filter(_.isRight)
-      .map(_.right.get.payload)
+      .map(_.toOption.get)
       .map(utils.coerce(_))
 
     lines

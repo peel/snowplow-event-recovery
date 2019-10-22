@@ -1,9 +1,14 @@
 {
-  "AdapterFailures" : [
+  "AdapterFailures": [
     {
       "context" : "Body",
-      "matcher" : "aaa",
-      "replacement" : "new"
+      "matcher" : "body",
+      "replacement" : "new-body"
+    },
+    {
+      "context" : "Query",
+      "matcher" : "query",
+      "replacement" : "new-query"
     }
   ]
 }
