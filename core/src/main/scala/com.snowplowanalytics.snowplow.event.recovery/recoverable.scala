@@ -15,6 +15,7 @@ import config.{
   EnrichmentFailures => EnrichmentFailuresFlow
 }
 import steps._
+// import inspectable._
 // import modify._
 
 object recoverable {
@@ -50,7 +51,7 @@ object recoverable {
           def update(b: AdapterFailures)(p: Payload.CollectorPayload) = b.copy(payload = p)
           // val repr = LabelledGeneric[Payload.CollectorPayload]
           // implicit val r = modify.Replace.genericReplace[Payload.CollectorPayload, repr.Repr]('vendor)
-          step(config, AdapterFailuresFlow, b.payload)(new ModifyCollectorPayload(_)).bimap(update(b), update(b))
+          step(config, AdapterFailuresFlow, b.payload)(new Modify[Payload.CollectorPayload](_)).bimap(update(b), update(b))
         }
       }
 

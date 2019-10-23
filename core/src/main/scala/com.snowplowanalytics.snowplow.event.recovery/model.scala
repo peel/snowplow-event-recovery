@@ -51,7 +51,6 @@ object model {
     def mutateCollectorPayload(recoveryScenarios: List[RecoveryScenario])(line: String): CollectorPayload =
       (utils.thriftDeser andThen
          recoveryScenarios
-         // FIXME needs proper filtering
           // .filter(_.filter(errors))
           .map(_.mutate _)
           .fold(identity[CollectorPayload] _)(_ andThen _)

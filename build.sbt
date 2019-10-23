@@ -64,6 +64,7 @@ lazy val core = project
       "com.github.julien-truffaut" %% "monocle-macro" % monocleVersion,
       "com.snowplowanalytics" %% "iglu-scala-client" % igluClientVersion,
       "com.github.reugn" %% "dynamic" % dynamicVersion,
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalatest" %% "scalatest" % scalatestVersion % "test",
       "org.scalacheck" %% "scalacheck" % scalacheckVersion % "test",
       "com.snowplowanalytics" %% "scalacheck-schema" % scalacheckSchemaVersion % "test",

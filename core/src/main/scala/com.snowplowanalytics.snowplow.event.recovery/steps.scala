@@ -5,8 +5,8 @@ import com.snowplowanalytics.snowplow.badrows._
 import cats.implicits._
 import com.github.reugn.dynamic._
 
-// import inspectable._
-// import inspectable.Inspectable.ops._
+import inspectable._
+import inspectable.Inspectable.ops._
 import config._
 
 object steps {
@@ -42,10 +42,13 @@ object steps {
   class ModifyEnrichmentPayload(config: StepConfig) extends Step[Payload.EnrichmentPayload] {
     val recover: Payload.EnrichmentPayload => Either[Payload.EnrichmentPayload, Payload.EnrichmentPayload] = a => config match {
       case Replacement(context, matcher, replacement) =>
-        // FIXME update values
-        Right(a.copy(rawEvent=a.rawEvent))
+        // FIXME cleanup for scala > 2.11 & proper replacement within context on matcher
+        Either.catchNonFatal(copy(a, context, replacement)) match {
+          case Right(m) => Right(m)
+          case _ => Left(a)
+        }
       case Removal(context, matcher) =>
-        // FIXME remove values
+        // FIXME cleanup for scala > 2.11 & proper replacement within context on matcher
         Either.catchNonFatal(copy(a, context, "")) match {
           case Right(m) => Right(m)
           case _ => Left(a)
@@ -55,17 +58,16 @@ object steps {
     }
   }
 
+
   // TODO this was a great idea but does not work due to type class instances derivation issue (maybe 2.13 will solve this)
-  // import modify.Replace
-  // import modify.Replace.ops._
-  // class Modify[A <: Payload : Replace](config: StepConfig) extends Step[A] {
-  //   val recover: A => Either[A, A] = a => config match {
-  //     case Replacement(context, matcher, replacement) =>
-  //       Right(a.replace(context)(_.toUpperCase)(Replace("body")))
-  //     case Removal(context, matcher) =>
-  //       Right(a.replace(context)(_ => ""))
-  //     case _ =>
-  //       Left(a)
-  //   }
-  // }
+  class Modify[A <: Payload : Inspectable](config: StepConfig) extends Step[A] {
+    val recover: A => Either[A, A] = a => config match {
+      case Replacement(context, matcher, replacement) =>
+        Right(a.replace(_.toUpperCase)(context))
+      case Removal(context, matcher) =>
+        Right(a.replace(_ => "")(context))
+      case _ =>
+        Left(a)
+    }
+  }
 }
