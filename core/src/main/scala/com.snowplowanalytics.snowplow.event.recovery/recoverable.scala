@@ -6,7 +6,6 @@ import com.snowplowanalytics.snowplow.badrows.BadRow._
 import com.snowplowanalytics.snowplow.badrows.Payload
 import cats.data._
 import cats.implicits._
-// import shapeless._
 import config._
 import config.{
   AdapterFailures => AdapterFailuresFlow,
@@ -15,7 +14,7 @@ import config.{
   EnrichmentFailures => EnrichmentFailuresFlow
 }
 import steps._
-// import modify._
+import inspectable.Inspectable._
 
 object recoverable {
   trait Recoverable[A <: BadRow, B <: Payload] { self =>
@@ -43,14 +42,13 @@ object recoverable {
     implicit val sizeViolationRecovery: Recoverable[SizeViolation, Payload.RawPayload] = unrecoverable
     implicit val cpFormatViolationRecovery: Recoverable[CPFormatViolation, Payload.RawPayload] = unrecoverable
 
+    // TODO can we generate?
     implicit val adapterFailuresRecovery: Recoverable[AdapterFailures, Payload.CollectorPayload] =
       new Recoverable[AdapterFailures, Payload.CollectorPayload] {
         override def payload(b: AdapterFailures) = b.payload
         override def recover(b: AdapterFailures)(config: Config) = {
           def update(b: AdapterFailures)(p: Payload.CollectorPayload) = b.copy(payload = p)
-          // val repr = LabelledGeneric[Payload.CollectorPayload]
-          // implicit val r = modify.Replace.genericReplace[Payload.CollectorPayload, repr.Repr]('vendor)
-          step(config, AdapterFailuresFlow, b.payload)(new ModifyCollectorPayload(_)).bimap(update(b), update(b))
+          step(config, AdapterFailuresFlow, b.payload)(new Modify[Payload.CollectorPayload](_)).bimap(update(b), update(b))
         }
       }
 
@@ -59,9 +57,7 @@ object recoverable {
         override def payload(b: TrackerProtocolViolations) = b.payload
         override def recover(b: TrackerProtocolViolations)(config: Config) = {
           def update(b: TrackerProtocolViolations)(p: Payload.CollectorPayload) = b.copy(payload = p)
-          // val repr = LabelledGeneric[Payload.CollectorPayload]
-          // implicit val r = modify.Replace.genericReplace[Payload.CollectorPayload, repr.Repr]('vendor)
-          step(config, TrackerProtocolViolationsFlow, b.payload)(new ModifyCollectorPayload(_)).bimap(update(b), update(b))
+          step(config, TrackerProtocolViolationsFlow, b.payload)(new Modify[Payload.CollectorPayload](_)).bimap(update(b), update(b))
         }
       }
 
@@ -70,9 +66,7 @@ object recoverable {
         override def payload(b: SchemaViolations) = b.payload
         override def recover(b: SchemaViolations)(config: Config) = {
           def update(b: SchemaViolations)(p: Payload.EnrichmentPayload) = b.copy(payload = p)
-          // val repr = LabelledGeneric[Payload.EnrichmentPayload]
-          // implicit val r = modify.Replace.genericReplace[Payload.EnrichmentPayload, repr.Repr]('rawEvent)
-          step(config, SchemaViolationsFlow, b.payload)(new ModifyEnrichmentPayload(_)).bimap(update(b), update(b))
+          step(config, SchemaViolationsFlow, b.payload)(new Modify[Payload.EnrichmentPayload](_)).bimap(update(b), update(b))
         }
       }
 
@@ -80,12 +74,10 @@ object recoverable {
       override def payload(b: EnrichmentFailures) = b.payload
       override def recover(b: EnrichmentFailures)(config: Config) = {
         def update(b: EnrichmentFailures)(p: Payload.EnrichmentPayload) = b.copy(payload = p)
-        // val repr = LabelledGeneric[Payload.EnrichmentPayload]
-        // implicit val r = modify.Replace.genericReplace[Payload.EnrichmentPayload, repr.Repr]('rawEvent)
-        step(config, EnrichmentFailuresFlow, b.payload)(new ModifyEnrichmentPayload(_)).bimap(update(b), update(b))
-        }
+        step(config, EnrichmentFailuresFlow, b.payload)(new Modify[Payload.EnrichmentPayload](_)).bimap(update(b), update(b))
+      }
     }
-    
+
     private[this] def unrecoverable[A <: BadRow, B <: Payload] = new Recoverable[A, B] {
       override def payload(a: A) = ???
       override def recover(a: A)(c: Config) = Left(a)

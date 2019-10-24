@@ -48,7 +48,7 @@ lazy val dynamicVersion = "0.1.1"
 
 lazy val core = project
   .settings(moduleName := "snowplow-event-recovery")
-  .settings(buildSettings)
+  .settings(buildSettings ++ macroSettings)
   .settings(
     resolvers ++= Seq(
       "Snowplow Analytics Maven repo" at "http://maven.snplow.com/releases/",
@@ -126,14 +126,14 @@ lazy val declineVersion = "0.5.0"
 
 // lazy val scioVersion = "0.6.1"
 // lazy val beamVersion = "2.5.0"
-// lazy val scalaMacrosVersion = "2.1.0"
+lazy val scalaMacrosVersion = "2.1.0"
 
-// lazy val paradiseDependency =
-//   "org.scalamacros" % "paradise" % scalaMacrosVersion cross CrossVersion.full
-// lazy val macroSettings = Seq(
-//   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-//   addCompilerPlugin(paradiseDependency)
-// )
+lazy val paradiseDependency =
+  "org.scalamacros" % "paradise" % scalaMacrosVersion cross CrossVersion.full
+lazy val macroSettings = Seq(
+  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+  addCompilerPlugin(paradiseDependency)
+)
 
 // import com.typesafe.sbt.packager.docker._
 // dockerRepository := Some("snowplow-docker-registry.bintray.io")

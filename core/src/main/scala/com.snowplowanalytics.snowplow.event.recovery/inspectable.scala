@@ -1,73 +1,87 @@
 package com.snowplowanalytics.snowplow
 package event.recovery
 
-import com.snowplowanalytics.snowplow.badrows.{NVP, Payload}
-
-import monocle.Lens
-import monocle.macros._
-// import config._
-
-import shapeless._
-import shapeless.ops.record._
-
-object modify {
-  trait Replace[A <: Payload] {
-    def apply(a: A)(ctx: String)(fn: String => String): A
-  }
-
-  object Replace {
-    def apply[A <: Payload](w: String)(implicit r: Lazy[Replace[A]]): Replace[A] = r.value
-
-    implicit def genericReplace[A <: Payload, ARepr <: HList]
-      (w: Witness)(implicit
-       gen: LabelledGeneric.Aux[A, ARepr],
-       mod: Modifier.Aux[ARepr, w.T, String, String, ARepr]
-      ): Replace[A] =
-      new Replace[A] {
-        def apply(a: A)(ctx: String)(fn: String => String): A = {
-          val record: ARepr = gen.to(a)
-          val updated: ARepr = mod(record, fn)
-          gen.from(updated)
-        }
-      }
-
-    object ops {
-      implicit class ReplaceOps[A <: Payload](a: A){
-        def replace(ctx: String)(fn: String => String)(implicit replacer: Replace[A]): A = replacer(a)(ctx)(fn)
-      }
-    }
-  }
-}
+import com.snowplowanalytics.snowplow.badrows._
+import config.Context
+import cats.implicits._
+import monocle.function.At.at
+import monocle.macros.syntax.lens._
 
 object inspectable {
-  trait Inspectable[A <: Payload] {
-    // def replaces(a: A)(implicit replace: Replace[A]): A = replace(a)
-
-    def body(a: A): Lens[A, Option[String]]
-    def query(a: A): Lens[A, List[NVP]]
-
-  }
   object Inspectable {
+    trait Inspectable[A <: Payload] {
+      def replace(a: A)(ctx: Context, matcher: String, replacement: String): Either[A, A]
+      def remove(a: A)(ctx: Context, matcher: String): Either[A, A] = replace(a)(ctx, matcher, "")
+    }
     def apply[A <: Payload](implicit i: Inspectable[A]): Inspectable[A] = i
     object ops {
       implicit class InspectableOps[A <: Payload: Inspectable](a: A){
-        def body = Inspectable[A].body(a)
-        def query = Inspectable[A].query(a)
-        // def replaces(ctx: Witness)(implicit replacer: Replace[A]) = Inspectable[A].replaces(a)
+        def replace(ctx: Context, matcher: String, replacement: String) = Inspectable[A].replace(a)(ctx, matcher, replacement)
+        def remove(ctx: Context, matcher: String) = Inspectable[A].remove(a)(ctx, matcher)
       }
     }
 
     implicit val collectorPayloadInspectable: Inspectable[Payload.CollectorPayload] =
       new Inspectable[Payload.CollectorPayload] {
-        override def body(p: Payload.CollectorPayload) = GenLens[Payload.CollectorPayload](_.body)
-        override def query(p: Payload.CollectorPayload) = GenLens[Payload.CollectorPayload](_.querystring)
+        override def replace(p: Payload.CollectorPayload)(context: Context, matcher: String, replacement: String) = {
+          extractContext(context).headOption.toRight(p) flatMap {
+            case "vendor" => p.lens(_.vendor).modify(_.replaceAll(matcher, replacement)).asRight
+            case "version" => p.lens(_.version).modify(_.replaceAll(matcher, replacement)).asRight
+            case "querystring" => p.lens(_.querystring).modify(_.map(_.lens(_.value).modify(_.map(_.replaceAll(matcher, replacement))))).asRight
+            case "contentType" => p.lens(_.contentType).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "body" => p.lens(_.body).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "collector" => p.lens(_.collector).modify(_.replaceAll(matcher, replacement)).asRight
+            case "encoding" => p.lens(_.encoding).modify(_.replaceAll(matcher, replacement)).asRight
+            case "hostname" => p.lens(_.hostname).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "timestamp" => p.lens(_.timestamp).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "ipAddress" => p.lens(_.ipAddress).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "useragent" => p.lens(_.useragent).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "refererUri" => p.lens(_.refererUri).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "headers" => p.lens(_.headers).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "networkUserId" => p.lens(_.networkUserId).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case _ => Left(p)
+          }
+        }
+          
       }
 
     implicit val enrichmentPayloadInspectable: Inspectable[Payload.EnrichmentPayload] =
       new Inspectable[Payload.EnrichmentPayload] {
-        override def body(p: Payload.EnrichmentPayload) = ???
-        override def query(p: Payload.EnrichmentPayload) = ???
+        override def replace(p: Payload.EnrichmentPayload)(context: Context, matcher: String, replacement: String) = {
+          val nestedContext = extractContext(context)
+          val failed = Left(p)
+          (for {
+           top <- extractSegment(context, 1).toRight(p) match {
+             case Right(r) => Right(r)
+             case Left(_) => failed
+            }
+            bottom <- extractSegment(context, 2).toRight(p) match {
+             case Right(r) => Right(r)
+             case Left(_) => failed
+            }
+          } yield (top, bottom)).flatMap {
+            case ("rawEvent", "vendor") => p.lens(_.rawEvent.vendor).modify(_.replaceAll(matcher, replacement)).asRight
+            case ("rawEvent", "version") => p.lens(_.rawEvent.version).modify(_.replaceAll(matcher, replacement)).asRight
+            case ("rawEvent", "parameters") => extractSegment(context, 3).toRight(p).flatMap { v =>
+              p.lens(_.rawEvent.parameters).composeLens(at(v)).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            }
+            case ("rawEvent", "contentType") => p.lens(_.rawEvent.contentType).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("rawEvent", "loaderName") => p.lens(_.rawEvent.loaderName).modify(_.replaceAll(matcher, replacement)).asRight
+            case ("rawEvent", "encoding") => p.lens(_.rawEvent.encoding).modify(_.replaceAll(matcher, replacement)).asRight
+            case ("rawEvent", "hostname") => p.lens(_.rawEvent.hostname).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("rawEvent", "timestamp") => p.lens(_.rawEvent.timestamp).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("rawEvent", "ipAddress") => p.lens(_.rawEvent.ipAddress).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("rawEvent", "useragent") => p.lens(_.rawEvent.useragent).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("rawEvent", "refererUri") => p.lens(_.rawEvent.refererUri).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("rawEvent", "headers") => p.lens(_.rawEvent.headers).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("rawEvent", "userId") => p.lens(_.rawEvent.userId).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case _ => failed
+          }
+        }
       }
   }
+
+  private[this] def extractContext(stringContext: String) = stringContext.split('.')
+  private[this] def extractSegment(stringContext: String, n: Int) = Either.catchNonFatal(extractContext(stringContext)(n)).toOption
 
 }

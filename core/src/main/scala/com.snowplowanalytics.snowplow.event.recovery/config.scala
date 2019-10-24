@@ -32,8 +32,6 @@ object config {
   case class Removal(context: Context, matcher: Matcher) extends StepConfig
 
   object json {
-    // implicit val contextE: Encoder[Context] = deriveEncoder[Context]
-    // implicit val contextD: Decoder[Context] = deriveDecoder[Context]
     implicit val replacementE: Encoder[Replacement] = deriveEncoder[Replacement]
     implicit val replacementD: Decoder[Replacement] = deriveDecoder[Replacement]
 
