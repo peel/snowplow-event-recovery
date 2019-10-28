@@ -35,8 +35,10 @@ lazy val circeOpticsVersion = "0.10.0"
 lazy val igluClientVersion = "0.5.0"
 lazy val slf4jVersion = "1.7.25"
 lazy val scalatestVersion = "3.0.5"
-lazy val scalacheckVersion = "1.14.0"
+lazy val scalacheckMinorVersion = "1.14"
+lazy val scalacheckVersion = s"$scalacheckMinorVersion.0"
 lazy val scalacheckSchemaVersion = "0.1.0"
+lazy val shapelessScalacheckVersion = "1.2.3"
 lazy val sceVersion = "0.35.0"
 lazy val monocleVersion = "1.5.0-cats"
 lazy val circeVersion = "0.11.0"
@@ -44,7 +46,7 @@ lazy val circeDependencies = Seq(
   "circe-generic-extras",
   "circe-parser"
 ).map("io.circe" %% _ % circeVersion)
-lazy val dynamicVersion = "0.1.1"
+lazy val scalacheckToolBoxDatetimeVersion = "0.3.1"
 
 lazy val core = project
   .settings(moduleName := "snowplow-event-recovery")
@@ -63,9 +65,10 @@ lazy val core = project
       "io.circe" %% "circe-optics" % circeOpticsVersion,
       "com.github.julien-truffaut" %% "monocle-macro" % monocleVersion,
       "com.snowplowanalytics" %% "iglu-scala-client" % igluClientVersion,
-      "com.github.reugn" %% "dynamic" % dynamicVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion % "test",
       "org.scalacheck" %% "scalacheck" % scalacheckVersion % "test",
+      "com.github.alexarchambault" %% s"scalacheck-shapeless_$scalacheckMinorVersion" % shapelessScalacheckVersion % "test",
+      "com.47deg" %% "scalacheck-toolbox-datetime" % scalacheckToolBoxDatetimeVersion % "test",
       "com.snowplowanalytics" %% "scalacheck-schema" % scalacheckSchemaVersion % "test",
       ("com.snowplowanalytics" %% "snowplow-common-enrich" % sceVersion % "test")
         .exclude("com.maxmind.geoip2", "geoip2"),

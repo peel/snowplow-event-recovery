@@ -2,7 +2,7 @@ package com.snowplowanalytics.snowplow
 package event.recovery
 
 import com.snowplowanalytics.snowplow.badrows._
-import config.Context
+import config.{Context, Matcher}
 import cats.implicits._
 import monocle.function.At.at
 import monocle.macros.syntax.lens._
@@ -23,22 +23,23 @@ object inspectable {
 
     implicit val collectorPayloadInspectable: Inspectable[Payload.CollectorPayload] =
       new Inspectable[Payload.CollectorPayload] {
-        override def replace(p: Payload.CollectorPayload)(context: Context, matcher: String, replacement: String) = {
+        override def replace(p: Payload.CollectorPayload)(context: Context, matcher: Matcher, replacement: String) = {
+          def fix(str: String) = matcher.r.replaceAllIn(str, replacement)
           extractContext(context).headOption.toRight(p) flatMap {
-            case "vendor" => p.lens(_.vendor).modify(_.replaceAll(matcher, replacement)).asRight
-            case "version" => p.lens(_.version).modify(_.replaceAll(matcher, replacement)).asRight
-            case "querystring" => p.lens(_.querystring).modify(_.map(_.lens(_.value).modify(_.map(_.replaceAll(matcher, replacement))))).asRight
-            case "contentType" => p.lens(_.contentType).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case "body" => p.lens(_.body).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case "collector" => p.lens(_.collector).modify(_.replaceAll(matcher, replacement)).asRight
-            case "encoding" => p.lens(_.encoding).modify(_.replaceAll(matcher, replacement)).asRight
-            case "hostname" => p.lens(_.hostname).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case "timestamp" => p.lens(_.timestamp).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case "ipAddress" => p.lens(_.ipAddress).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case "useragent" => p.lens(_.useragent).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case "refererUri" => p.lens(_.refererUri).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case "headers" => p.lens(_.headers).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case "networkUserId" => p.lens(_.networkUserId).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case "vendor" => p.lens(_.vendor).modify(fix).asRight
+            case "version" => p.lens(_.version).modify(fix).asRight
+            case "querystring" => p.lens(_.querystring).modify(_.map(_.lens(_.value).modify(_.map(fix)))).asRight
+            case "contentType" => p.lens(_.contentType).modify(_.map(fix)).asRight
+            case "body" => p.lens(_.body).modify(_.map(fix)).asRight
+            case "collector" => p.lens(_.collector).modify(fix).asRight
+            case "encoding" => p.lens(_.encoding).modify(fix).asRight
+            case "hostname" => p.lens(_.hostname).modify(_.map(fix)).asRight
+            case "timestamp" => p.lens(_.timestamp).modify(_.map(fix)).asRight
+            case "ipAddress" => p.lens(_.ipAddress).modify(_.map(fix)).asRight
+            case "useragent" => p.lens(_.useragent).modify(_.map(fix)).asRight
+            case "refererUri" => p.lens(_.refererUri).modify(_.map(fix)).asRight
+            case "headers" => p.lens(_.headers).modify(_.map(fix)).asRight
+            case "networkUserId" => p.lens(_.networkUserId).modify(_.map(fix)).asRight
             case _ => Left(p)
           }
         }
@@ -50,6 +51,7 @@ object inspectable {
         override def replace(p: Payload.EnrichmentPayload)(context: Context, matcher: String, replacement: String) = {
           val nestedContext = extractContext(context)
           val failed = Left(p)
+          // TODO remove patmat for >2.11
           (for {
            top <- extractSegment(context, 1).toRight(p) match {
              case Right(r) => Right(r)
