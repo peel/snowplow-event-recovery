@@ -99,7 +99,7 @@ object utils {
   // }
 
   // FIXME map different payloads to collector payload
-  def coerce(p: Payload): CollectorPayload = p match {
+  def coerce(payload: Payload): Option[CollectorPayload] = payload match {
     case p: Payload.CollectorPayload => {
       val cp = new CollectorPayload(
         s"iglu:${p.vendor}/CollectorPayload/thrift/${p.version}",
@@ -116,9 +116,27 @@ object utils {
       cp.contentType = p.contentType.orNull
       cp.hostname = p.hostname.orNull
       cp.networkUserId = p.networkUserId.orNull
-      cp
+      cp.some
     }
-    case _ => null
+    case Payload.EnrichmentPayload(_, p) => {
+      val cp = new CollectorPayload(
+        s"iglu:${p.vendor}/CollectorPayload/thrift/${p.version}",
+        p.ipAddress.orNull,
+        p.timestamp.map(Instant.parse).map(_.toEpochMilli).getOrElse(0),
+        p.encoding,
+        null // FIXME p.collector?
+      )
+      cp.userAgent = p.useragent.orNull
+      cp.refererUri = p.refererUri.orNull
+      // FIXME ??? cp.querystring = azFoldable[List].foldMap(p.querystring)(_.value.getOrElse(""))
+      // FIXME ??? cp.body = p.body.orNull
+      cp.headers = p.headers.asJava
+      cp.contentType = p.contentType.orNull
+      cp.hostname = p.hostname.orNull
+      cp.networkUserId = p.userId.orNull
+      cp.some
+    }
+    case _ => None
   }
 
 }
