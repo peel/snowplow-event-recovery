@@ -106,7 +106,8 @@ object RecoveryJob {
     lines
       .print()
 
-    val res = env.execute("Event recovery job started.")
+    env.execute("Event recovery job started.")
+    ()
   }
 }
 

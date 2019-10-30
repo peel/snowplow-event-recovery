@@ -22,8 +22,8 @@ import scala.collection.JavaConverters._
 
 import cats._
 import cats.implicits._
-import io.circe.generic.extras.auto._
-import io.circe.generic.extras.Configuration
+// import io.circe.generic.extras.auto._
+// import io.circe.generic.extras.Configuration
 import org.apache.thrift.{TDeserializer, TSerializer}
 
 import config.Config
@@ -61,26 +61,11 @@ object utils {
       .leftMap(e => s"Configuration is not properly base64-encoded: ${e.getMessage}")
 
   /**
-   * Parse a json containing a list of recovery scenarios.
-   * @param json to be parsed
-   * @return either a successfully parsed list of [[RecoveryScenario]] or a failure
-   */
-  def parseRecoveryScenarios(json: String): Either[String, List[RecoveryScenario]] = {
-    implicit val genConfig: Configuration =
-      Configuration.default.withDiscriminator("name")
-    val result = for {
-      parsed <- io.circe.parser.parse(json)
-      scenarios <- parsed.hcursor.get[List[RecoveryScenario]]("data")
-    } yield scenarios
-    result.leftMap(e => s"Configuration is not properly formatted: ${e.getMessage}")
-  }
-
-  /**
    * Validate that a configuration conforms to its schema.
    * @param configuration in json form
    * @return a failure if the json didn't validate against its schema or a success
    */
-  def validateConfiguration(json: String): Either[String, Unit] = Right(())
+  // def validateConfiguration(json: String): Either[String, Unit] = Right(())
 
   def loadConfig(json: String): Either[String, config.Config] =
     io.circe.parser.decode[Config](json).leftMap(_.toString)

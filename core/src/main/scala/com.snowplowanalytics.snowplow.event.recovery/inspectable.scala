@@ -49,7 +49,6 @@ object inspectable {
     implicit val enrichmentPayloadInspectable: Inspectable[Payload.EnrichmentPayload] =
       new Inspectable[Payload.EnrichmentPayload] {
         override def replace(p: Payload.EnrichmentPayload)(context: Context, matcher: String, replacement: String) = {
-          val nestedContext = extractContext(context)
           val failed = Left(p)
           // TODO remove patmat for >2.11
           (for {

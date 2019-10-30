@@ -15,7 +15,7 @@
 
 lazy val buildSettings = Seq(
   organization := "com.snowplowanalytics",
-  scalaVersion := "2.11.12",
+  scalaVersion := "2.12.10",
   version := "0.1.1",
   javacOptions := Seq("-source", "1.8", "-target", "1.8"),
   initialize ~= { _ => makeColorConsole() },
@@ -28,18 +28,18 @@ lazy val snowplowEventRecovery = (project.in(file(".")))
   .dependsOn(core)
 
 lazy val thriftSchemaVersion = "0.0.0"
-lazy val badRowsVersion = "0.1.0-M4"
+lazy val badRowsVersion = "0.1.0-M5"
 lazy val catsVersion = "1.4.0"
 lazy val scalaUriVersion = "1.4.0"
 lazy val circeOpticsVersion = "0.10.0"
-lazy val igluClientVersion = "0.5.0"
+lazy val igluClientVersion = "0.6.0"
 lazy val slf4jVersion = "1.7.25"
 lazy val scalatestVersion = "3.0.5"
 lazy val scalacheckMinorVersion = "1.14"
 lazy val scalacheckVersion = s"$scalacheckMinorVersion.0"
-lazy val scalacheckSchemaVersion = "0.1.0"
+lazy val scalacheckSchemaVersion = "0.2.0-M1"
 lazy val shapelessScalacheckVersion = "1.2.3"
-lazy val sceVersion = "0.35.0"
+lazy val sceVersion = "1.0.0"
 lazy val monocleVersion = "1.5.0-cats"
 lazy val circeVersion = "0.11.0"
 lazy val circeDependencies = Seq(

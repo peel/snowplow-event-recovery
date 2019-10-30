@@ -41,7 +41,7 @@ class RecoveryScenarioSpec extends FreeSpec with Inspectors with GeneratorDriven
   "Recoverable" - {
     "allow matcher-based field content replacement" in {
       forAll { (b: BadRow.AdapterFailures) =>
-        val fields = b.payload.getClass.getDeclaredFields.toList.map(_.getName).zipWithIndex.filterNot{case (v, i) => Seq("querystring", "headers").contains(v)}.toMap
+        val fields = b.payload.getClass.getDeclaredFields.toList.map(_.getName).zipWithIndex.filterNot{case (v, _) => Seq("querystring", "headers").contains(v)}.toMap
         val filteredFieldId = Gen.chooseNum(0, fields.size-1).sample.get
         val fieldId = fields.values.toList(filteredFieldId)
         val field = fields.keys.toList(filteredFieldId)
