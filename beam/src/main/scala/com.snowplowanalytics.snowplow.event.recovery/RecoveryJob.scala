@@ -18,12 +18,13 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.syntax.apply._
 import cats.syntax.either._
 import cats.syntax.option._
-import com.spotify.scio.{ContextAndArgs, ScioContext, ScioMetrics}
+import com.spotify.scio.{ContextAndArgs, ScioContext}
 import io.circe.generic.auto._
 import io.circe.parser.decode
-import org.apache.thrift.TSerializer
 
-import model._
+import config._
+import recoverable._, Recoverable.ops._
+import com.snowplowanalytics.snowplow.badrows._
 
 object Main {
   /** Entry point for the Beam recovery job */
@@ -35,12 +36,11 @@ object Main {
       config <- args.optional("config").toRight("Base64-encoded configuration with schema " +
         "com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0 is mandatory")
       decoded <- utils.decodeBase64(config)
-      _ <- utils.validateConfiguration(decoded)
-      rss <- utils.parseRecoveryScenarios(decoded)
-    } yield rss).toValidatedNel
+      cfg <- utils.loadConfig(decoded)
+    } yield cfg).toValidatedNel
     (input, output, recoveryScenarios).tupled match {
-      case Valid((i, o, rss)) =>
-        RecoveryJob.run(sc, i, o, rss)
+      case Valid((i, o, cfg)) =>
+        RecoveryJob.run(sc, i, o, cfg)
         val _ = sc.close()
         ()
       case Invalid(l) =>
@@ -70,31 +70,34 @@ object RecoveryJob {
     sc: ScioContext,
     input: String,
     output: String,
-    recoveryScenarios: List[RecoveryScenario]
+    cfg: Config
   ): Unit = {
     val _ = sc.withName(s"read-input-bad-rows")
       .textFile(input)
       .withName("parse-bad-rows")
       .map(decode[BadRow])
       .withName("filter-bad-rows")
-      .collect { case Right(br) if BadRow.isAffected(recoveryScenarios, br) =>
-        recoveryScenarios
-          .filter(rs => BadRow.isAffected(List(rs), br))
-          .foreach { rs =>
-            ScioMetrics
-              .counter("snowplow", s"bad_rows_recovered_${rs.getClass.getSimpleName}")
-              .inc()
-          }
-        br
-      }
-      .withName("fix-collector-payloads")
-      .map { br =>
-        val newCollectorPayload = br.mutateCollectorPayload(recoveryScenarios)
-        val thriftSerializer = new TSerializer
-        thriftSerializer.serialize(newCollectorPayload)
-      }
+      .filter(_.isRight)
+      .map(_.toOption.get)
+      .withName("recover-bad-rows")
+      .map(unpack(cfg, _))
+      .withName("serialize-bad-rows")
+      .filter(_.isRight)
+      .map(_.toOption.get)
+      .map(utils.coerce(_))
+      .filter(_.isDefined)
+      .map(_.get)
+      .map(utils.thriftSer)
       .withName(s"save-to-pubsub-topic")
       .saveAsPubsub(output)
     ()
   }
+  private def unpack(cfg: Config, b: BadRow): Either[BadRow, Payload] = b match {
+      case r: BadRow.AdapterFailures => r.recover(cfg).map(_.payload)
+      case r: BadRow.TrackerProtocolViolations => r.recover(cfg).map(_.payload)
+      case r: BadRow.SchemaViolations => r.recover(cfg).map(_.payload)
+      case r: BadRow.EnrichmentFailures => r.recover(cfg).map(_.payload)
+      case l => Left(l)
+    }
+
 }

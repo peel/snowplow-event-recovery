@@ -127,8 +127,8 @@ lazy val declineVersion = "0.5.0"
 //     }
 //   ).dependsOn(core % "compile->compile;test->test")
 
-// lazy val scioVersion = "0.6.1"
-// lazy val beamVersion = "2.5.0"
+lazy val scioVersion = "0.6.1"
+lazy val beamVersion = "2.5.0"
 lazy val scalaMacrosVersion = "2.1.0"
 
 lazy val paradiseDependency =
@@ -138,26 +138,26 @@ lazy val macroSettings = Seq(
   addCompilerPlugin(paradiseDependency)
 )
 
-// import com.typesafe.sbt.packager.docker._
-// dockerRepository := Some("snowplow-docker-registry.bintray.io")
-// dockerUsername := Some("snowplow")
-// dockerBaseImage := "snowplow-docker-registry.bintray.io/snowplow/base-debian:0.1.0"
-// maintainer in Docker := "Snowplow Analytics Ltd. <support@snowplowanalytics.com>"
-// daemonUser in Docker := "snowplow"
+import com.typesafe.sbt.packager.docker._
+dockerRepository := Some("snowplow-docker-registry.bintray.io")
+dockerUsername := Some("snowplow")
+dockerBaseImage := "snowplow-docker-registry.bintray.io/snowplow/base-debian:0.1.0"
+maintainer in Docker := "Snowplow Analytics Ltd. <support@snowplowanalytics.com>"
+daemonUser in Docker := "snowplow"
 
-// lazy val beam = project
-//   .settings(packageName := "snowplow-event-recovery-beam")
-//   .settings(buildSettings ++ macroSettings)
-//   .settings(
-//     description := "Snowplow event recovery job for GCP",
-//     libraryDependencies ++= Seq(
-//       "com.spotify" %% "scio-core" % scioVersion,
-//       "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % beamVersion,
-//       "org.slf4j" % "slf4j-simple" % slf4jVersion,
-//       "com.spotify" %% "scio-test" % scioVersion % "test",
-//     )
-//   ).dependsOn(core % "compile->compile;test->test")
-//   .enablePlugins(JavaAppPackaging)
+lazy val beam = project
+  .settings(packageName := "snowplow-event-recovery-beam")
+  .settings(buildSettings ++ macroSettings)
+  .settings(
+    description := "Snowplow event recovery job for GCP",
+    libraryDependencies ++= Seq(
+      "com.spotify" %% "scio-core" % scioVersion,
+      "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % beamVersion,
+      "org.slf4j" % "slf4j-simple" % slf4jVersion,
+      "com.spotify" %% "scio-test" % scioVersion % "test",
+    )
+  ).dependsOn(core % "compile->compile;test->test")
+  .enablePlugins(JavaAppPackaging)
 
 lazy val flinkVersion = "1.9.0"
 

@@ -20,7 +20,6 @@ import com.monovore.decline._
 import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.CollectorPayload
 import com.snowplowanalytics.snowplow.badrows._
 
-import recoverable.Recoverable._, recoverable.Recoverable.ops._
 import config._
 import typeinfo._
 import recoverable._, Recoverable.ops._
