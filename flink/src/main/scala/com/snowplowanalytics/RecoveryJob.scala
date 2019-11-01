@@ -13,9 +13,11 @@ import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
 
-import cats.syntax.apply._
-import cats.syntax.either._
 import com.monovore.decline._
+import com.monovore.decline.effect._
+
+import cats.effect._
+import cats.implicits._
 
 import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.CollectorPayload
 import com.snowplowanalytics.snowplow.badrows._
@@ -23,6 +25,9 @@ import com.snowplowanalytics.snowplow.badrows._
 import config._
 import typeinfo._
 import recoverable._, Recoverable.ops._
+
+import cats.Id
+import scala.concurrent.duration.{TimeUnit, MILLISECONDS, NANOSECONDS}
 
 object typeinfo {
   // TODO Flink's macros cause unused import on `package`
@@ -37,20 +42,28 @@ object typeinfo {
   implicit val stringT: TypeInformation[String] = TypeInformation.of(classOf[String])
 }
 
-object Main extends CommandApp(
+object Main extends CommandIOApp(
   name = "snowplow-event-recovery-job",
-  header = "Snowplow event recovery job",
-  main = {
+  header = "Snowplow event recovery job"
+){
+  override def main: Opts[IO[ExitCode]] = {
     val input = Opts.option[String]("input", help = "Input S3 path")
     val output = Opts.option[String]("output", help = "Output Kinesis topic")
     val config = Opts.option[String](
       "config",
       help = "Base64 config with schema com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0"
     ).mapValidated(utils.decodeBase64(_).toValidatedNel)
+     .mapValidated(json => utils.validateConfiguration[Id](json).toValidatedNel.map(_ => json))
      .mapValidated(utils.loadConfig(_).toValidatedNel)
-    (input, output, config).mapN { (i, o, c) => RecoveryJob.run(i, o, c) }
+    (input, output, config).mapN { (i, o, c) => IO(RecoveryJob.run(i, o, c)).as(ExitCode.Success) }
   }
-)
+  implicit val catsClockIdInstance: Clock[Id] = new Clock[Id] {
+    override def realTime(unit: TimeUnit): Id[Long] =
+      unit.convert(System.nanoTime(), NANOSECONDS)
+    override def monotonic(unit: TimeUnit): Id[Long] =
+      unit.convert(System.currentTimeMillis(), MILLISECONDS)
+  }
+}
 
 object RecoveryJob {
   def run(input: String, output: String, cfg: Config): Unit = {

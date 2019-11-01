@@ -1,14 +1,31 @@
 {
-  "AdapterFailures": [
-    {
-      "context" : "Body",
-      "matcher" : "body",
-      "replacement" : "new-body"
-    },
-    {
-      "context" : "Query",
-      "matcher" : "query",
-      "replacement" : "new-query"
+    "schema": "iglu:com.snowplowanalytics/recovery_config/jsonschema/1-0-0",
+    "data": {
+        "resolver": {
+            "schema": "iglu:com.snowplowanalytics.iglu/resolver-config/jsonschema/1-0-1",
+            "data": {
+                "cacheSize": 5,
+                "repositories": [{
+                    "name": "Iglu Central",
+                    "priority": 0,
+                    "vendorPrefixes": [ "com.snowplowanalytics" ],
+                    "connection": { "http": { "uri": "http://iglucentral.com" } }
+                }]
+            }
+        },
+        "recovery": {
+            "AdapterFailures": [
+                {
+                    "context" : "body",
+                    "matcher" : "body",
+                    "replacement" : "new-body"
+                },
+                {
+                    "context" : "query",
+                    "matcher" : "query",
+                    "replacement" : "new-query"
+                }
+            ]
+        }
     }
-  ]
 }

@@ -20,8 +20,16 @@ import java.time.Instant
 import java.util.Base64
 import scala.collection.JavaConverters._
 
+// import cats.implicits._
+import io.circe.Json
+import io.circe.parser.{parse => parseJson}
+import cats.effect.Clock
 import cats._
+import cats.data._
 import cats.implicits._
+import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData}
+import com.snowplowanalytics.iglu.client.resolver.{InitListCache, InitSchemaCache}
+import com.snowplowanalytics.iglu.client.resolver.registries.RegistryLookup
 // import io.circe.generic.extras.auto._
 // import io.circe.generic.extras.Configuration
 import org.apache.thrift.{TDeserializer, TSerializer}
@@ -30,6 +38,7 @@ import config.Config
 import config.json._
 import com.snowplowanalytics.snowplow.badrows.Payload
 import CollectorPayload.thrift.model1.CollectorPayload
+import com.snowplowanalytics.iglu.client.Client
 // import com.snowplowanalytics.iglu.client.Resolver
 // import com.snowplowanalytics.iglu.client.repositories._
 // import com.snowplowanalytics.iglu.client.validation.ValidatableJValue.validateAndIdentifySchema
@@ -60,30 +69,28 @@ object utils {
     Either.catchNonFatal(new String(Base64.getDecoder.decode(encoded)))
       .leftMap(e => s"Configuration is not properly base64-encoded: ${e.getMessage}")
 
+  def loadConfig(str: String): Either[String, config.Config] =
+    parseJson(str)
+      .flatMap(_.hcursor.downField("data").get[Config]("recovery"))
+      .leftMap(_.show)
+
   /**
    * Validate that a configuration conforms to its schema.
    * @param configuration in json form
    * @return a failure if the json didn't validate against its schema or a success
-   */
-  // def validateConfiguration(json: String): Either[String, Unit] = Right(())
+    */
+  def validateConfiguration[F[_] : Monad : InitSchemaCache : InitListCache : Clock: RegistryLookup](config: String): EitherT[F, String, Unit] = {
+    val parse: String => Either[String, Json] = str => parseJson(str).leftMap(_.show)
+    val zoomF: (String, String) => EitherT[F, String, Json] = (str, field) => EitherT.fromEither(parse(str).flatMap(_.hcursor.downField("data").downField(field).focus.toRight(s"Missing $field configuration")))
+    for {
+      resolver <- zoomF(config, "resolver")
+      recovery <- zoomF(config, "recovery")
+      c <- Client.parseDefault[F](resolver).leftMap(_.show)
+      i = SelfDescribingData(SchemaKey("com.snowplowanyltics.snowplow", "recovery_config", "jsonschema", SchemaVer.Full(1,0,0)), recovery)
+      _ <- c.check(i).leftMap(_.show)
+    } yield ()
+  }
 
-  def loadConfig(json: String): Either[String, config.Config] =
-    io.circe.parser.decode[Config](json).leftMap(_.toString)
-    // FIXME
-  // {
-  //   val resolver = Resolver(repos = List(HttpRepositoryRef(
-  //     config = RepositoryRefConfig(name = "Iglu central", 0, List("com.snowplowanalytics")),
-  //     uri = "http://iglucentral.com"
-  //   )))
-  //   for {
-  //     jvalue <- Either.catchNonFatal(org.json4s.jackson.JsonMethods.parse(json))
-  //       .leftMap(_.getMessage)
-  //     _ <- validateAndIdentifySchema(jvalue, dataOnly = true)(resolver)
-  //       .fold(errors => errors.list.mkString("\n").asLeft, _.asRight)
-  //   } yield ()
-  // }
-
-  // FIXME map different payloads to collector payload
   def coerce(payload: Payload): Option[CollectorPayload] = payload match {
     case p: Payload.CollectorPayload => {
       val cp = new CollectorPayload(
@@ -101,7 +108,7 @@ object utils {
       cp.contentType = p.contentType.orNull
       cp.hostname = p.hostname.orNull
       cp.networkUserId = p.networkUserId.orNull
-      cp.some
+      Some(cp)
     }
     case Payload.EnrichmentPayload(_, p) => {
       val cp = new CollectorPayload(
@@ -119,7 +126,7 @@ object utils {
       cp.contentType = p.contentType.orNull
       cp.hostname = p.hostname.orNull
       cp.networkUserId = p.userId.orNull
-      cp.some
+      Some(cp)
     }
     case _ => None
   }

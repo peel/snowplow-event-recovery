@@ -44,7 +44,8 @@ lazy val monocleVersion = "1.5.0-cats"
 lazy val circeVersion = "0.11.0"
 lazy val circeDependencies = Seq(
   "circe-generic-extras",
-  "circe-parser"
+  "circe-parser",
+  "circe-literal"
 ).map("io.circe" %% _ % circeVersion)
 lazy val scalacheckToolBoxDatetimeVersion = "0.3.1"
 
@@ -169,6 +170,7 @@ lazy val flink = project
     resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
       "com.monovore" %% "decline" % declineVersion,
+      "com.monovore" %% "decline-effect" % "1.0.0",
       "org.apache.flink" %% "flink-scala" % flinkVersion % "provided",
       "org.apache.flink" %% "flink-streaming-scala" % flinkVersion % "provided",
       "org.apache.flink" % "flink-s3-fs-hadoop" % flinkVersion % "provided",

@@ -22,7 +22,7 @@ object config {
   // case object Query extends Context
   // case object Body extends Context
   // case object Path extends Context
-
+  case class Conf(schema: String, data: Config)
   type Config = Map[Flow, List[StepConfig]]
   type Matcher = String
   type Context = String
@@ -53,5 +53,7 @@ object config {
     implicit val flowKeyD: KeyDecoder[Flow] = new KeyDecoder[Flow]{
       override def apply(value: String): Option[Flow] = Flow.read(value)
     }
+    implicit val confD: Decoder[Conf] = deriveDecoder[Conf]
+    implicit val confE: Encoder[Conf] = deriveEncoder[Conf]
   }
 }

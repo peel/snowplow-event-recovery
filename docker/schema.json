@@ -1,0 +1,67 @@
+{
+  "$schema": "iglu:com.snowplowanalytics.snowplow/recovery_config/jsonschema/1-0-0",
+  "type": "object",
+  "description": "Bad Rows recovery flows configuration",
+  "self": {
+    "vendor": "com.snowplowanalytics",
+    "name": "recovery_flow",
+    "format": "jsonschema",
+    "version": "1-0-0"
+  },
+  "properties": {
+    "iglu-resolver": {
+      "$ref": "???"
+    },
+    "AdapterFailures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/step"
+      },
+      "description": "Steps to be applied for Adapter Failures Bad Row type"
+    },
+    "TrackerProtocolViolations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/step"
+      },
+      "description": "Steps to be applied for Tracker Protocol Violations Bad Row type"
+    },
+    "SchemaViolations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/step"
+      },
+      "description": "Steps to be applied for Schema Violations Bad Row type"
+    },
+    "EnrichmentFailures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/step"
+      },
+      "description": "Steps to be applied for Enrichment Failures Bad Row type"
+    }
+  },
+  "definitions": {
+    "step": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "type": "string",
+          "description": "a qualified path for a field to which to apply the transformation, ie. `rawEvent.body`"
+        },
+        "matcher": {
+          "type": "string",
+          "description": "a regular expression for matching `context` value to which the transformation is applied ie. `^(.*)$`"
+        },
+        "replacement": {
+          "type": "string",
+          "description": "an optional replacement value applied in place of `matcher`, ie. `lorem ipsum-dolor.sit/amet`"
+        }
+      },
+      "required": [
+        "context",
+        "matcher"
+      ]
+    }
+  }
+}

@@ -18,6 +18,7 @@ import cats.syntax.apply._
 import cats.syntax.either._
 import com.hadoop.compression.lzo.{LzoCodec, LzopCodec}
 import com.monovore.decline._
+import com.monovore.decline.effect._
 import com.twitter.elephantbird.mapreduce.output.LzoThriftBlockOutputFormat
 import com.twitter.elephantbird.mapreduce.io.ThriftWritable
 import frameless.TypedDataset
@@ -33,21 +34,21 @@ import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.CollectorPa
 import model._
 
 /** Entry point for the Spark recovery job */
-object Main extends CommandApp(
+object Main extends CommandIOApp(
   name = "snowplow-event-recovery-job",
-  header = "Snowplow event recovery job",
-  main = {
+  header = "Snowplow event recovery job"){
+  override def main: Opts[IO[ExitCode]] = {
     val input = Opts.option[String]("input", help = "Input S3 path")
     val output = Opts.option[String]("output", help = "Output S3 path")
-    val recoveryScenarios = Opts.option[String](
+    val config = Opts.option[String](
       "config",
       help = "Base64 config with schema com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0"
     ).mapValidated(utils.decodeBase64(_).toValidatedNel)
       .mapValidated(json => utils.validateConfiguration(json).toValidatedNel.map(_ => json))
-      .mapValidated(utils.parseRecoveryScenarios(_).toValidatedNel)
-    (input, output, recoveryScenarios).mapN { (i, o, rss) => RecoveryJob.run(i, o, rss) }
+      .mapValidated(utils.loadConfig(_).toValidatedNel)
+    (input, output, config).mapN { (i, o, c) => RecoveryJob.run(i, o, c) }
   }
-)
+}
 
 object RecoveryJob {
   /**
@@ -63,7 +64,7 @@ object RecoveryJob {
    * @param output S3 location to write the fixed collector payloads to
    * @param recoveryScenarios list of recovery scenarios to apply on the bad rows
    */
-  def run(input: String, output: String, recoveryScenarios: List[RecoveryScenario]): Unit = {
+  def run(input: String, output: String, cfg: Config): Unit = {
     implicit val spark = {
       val conf = new SparkConf()
         .setIfMissing("spark.master", "local[*]")

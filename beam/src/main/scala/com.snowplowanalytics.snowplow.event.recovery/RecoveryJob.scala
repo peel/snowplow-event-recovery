@@ -36,6 +36,7 @@ object Main {
       config <- args.optional("config").toRight("Base64-encoded configuration with schema " +
         "com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0 is mandatory")
       decoded <- utils.decodeBase64(config)
+      _ <- utils.validateConfig(config)
       cfg <- utils.loadConfig(decoded)
     } yield cfg).toValidatedNel
     (input, output, recoveryScenarios).tupled match {
