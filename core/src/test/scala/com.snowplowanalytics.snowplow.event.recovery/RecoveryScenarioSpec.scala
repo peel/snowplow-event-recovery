@@ -18,7 +18,7 @@ import cats.implicits._
 import org.scalatest.{FreeSpec, Inspectors}
 import org.scalatest.Matchers._
 import org.scalatest.EitherValues._
-import org.scalatest.prop._
+import org.scalatestplus.scalacheck._
 import org.scalacheck._
 import org.scalacheck.ScalacheckShapeless._
 import com.fortysevendeg.scalacheck.datetime.jdk8.ArbitraryJdk8._
@@ -27,7 +27,7 @@ import com.snowplowanalytics.snowplow.badrows._
 import recoverable.Recoverable.ops._
 import config.{Config, Removal, Replacement}
 
-class RecoveryScenarioSpec extends FreeSpec with Inspectors with GeneratorDrivenPropertyChecks {
+class RecoveryScenarioSpec extends FreeSpec with Inspectors with ScalaCheckPropertyChecks {
   implicit val processorA = implicitly[Arbitrary[Processor]]
   implicit val adapterFailureA = implicitly[Arbitrary[FailureDetails.AdapterFailure]]
   implicit val adapterFailuresA = implicitly[Arbitrary[Failure.AdapterFailures]]

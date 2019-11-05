@@ -17,7 +17,7 @@ package event.recovery
 
 import org.scalatest.{FreeSpec, EitherValues}
 import org.scalatest.Matchers._
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import CollectorPayload.thrift.model1.CollectorPayload
 import gens._
@@ -25,7 +25,7 @@ import gens._
 // import RecoveryScenario._
 import utils._
 
-class UtilsSpec extends FreeSpec with PropertyChecks with EitherValues {
+class UtilsSpec extends FreeSpec with ScalaCheckPropertyChecks with EitherValues {
   "thriftSerDe" - {
     "should deserialize any collector payload" in {
       forAll { (cp: CollectorPayload) =>
