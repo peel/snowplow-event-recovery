@@ -5,7 +5,6 @@ import cats.syntax.functor._
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 import io.circe.syntax._
 import io.circe.generic.semiauto.{deriveEncoder, deriveDecoder}
-// import io.circe.generic.extras.semiauto.{deriveEnumerationEncoder, deriveEnumerationDecoder}
 
 object config {
   object Flow {
@@ -18,10 +17,6 @@ object config {
   case object SchemaViolations extends Flow
   case object EnrichmentFailures extends Flow
 
-  // sealed trait Context
-  // case object Query extends Context
-  // case object Body extends Context
-  // case object Path extends Context
   case class Conf(schema: String, data: Config)
   type Config = Map[Flow, List[StepConfig]]
   type Matcher = String

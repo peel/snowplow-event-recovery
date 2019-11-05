@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2018 Snowplow Analytics Ltd. All rights reserved.
+ * Copyright (c) 2018-2019 Snowplow Analytics Ltd. All rights reserved.
  *
  * This program is licensed to you under the Apache License Version 2.0,
  * and you may not use this file except in compliance with the Apache License Version 2.0.
@@ -20,7 +20,6 @@ import java.time.Instant
 import java.util.Base64
 import scala.collection.JavaConverters._
 
-// import cats.implicits._
 import io.circe.Json
 import io.circe.parser.{parse => parseJson}
 import cats.effect.Clock
@@ -30,8 +29,6 @@ import cats.implicits._
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData}
 import com.snowplowanalytics.iglu.client.resolver.{InitListCache, InitSchemaCache}
 import com.snowplowanalytics.iglu.client.resolver.registries.RegistryLookup
-// import io.circe.generic.extras.auto._
-// import io.circe.generic.extras.Configuration
 import org.apache.thrift.{TDeserializer, TSerializer}
 
 import config.Config
@@ -39,9 +36,6 @@ import config.json._
 import com.snowplowanalytics.snowplow.badrows.Payload
 import CollectorPayload.thrift.model1.CollectorPayload
 import com.snowplowanalytics.iglu.client.Client
-// import com.snowplowanalytics.iglu.client.Resolver
-// import com.snowplowanalytics.iglu.client.repositories._
-// import com.snowplowanalytics.iglu.client.validation.ValidatableJValue.validateAndIdentifySchema
 
 object utils {
   /** Deserialize a String into a CollectorPayload after having base64-decoded it. */

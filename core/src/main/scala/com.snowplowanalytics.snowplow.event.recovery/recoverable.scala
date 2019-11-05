@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2018-2019 Snowplow Analytics Ltd. All rights reserved.
+ *
+ * This program is licensed to you under the Apache License Version 2.0,
+ * and you may not use this file except in compliance with the Apache License Version 2.0.
+ * You may obtain a copy of the Apache License Version 2.0 at
+ * http://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the Apache License Version 2.0 is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Apache License Version 2.0 for the specific language governing permissions and
+ * limitations there under.
+ */
 package com.snowplowanalytics.snowplow
 package event.recovery
 
@@ -19,7 +33,7 @@ import inspectable.Inspectable._
 object recoverable {
   trait Recoverable[A <: BadRow, B <: Payload] { self =>
     def recover(a: A)(config: Config): Either[A, A]
-    def payload(a: A): B
+    def payload(a: A): Option[B]
   }
 
   object Recoverable {
@@ -45,7 +59,7 @@ object recoverable {
     // TODO can we generate?
     implicit val adapterFailuresRecovery: Recoverable[AdapterFailures, Payload.CollectorPayload] =
       new Recoverable[AdapterFailures, Payload.CollectorPayload] {
-        override def payload(b: AdapterFailures) = b.payload
+        override def payload(b: AdapterFailures) = b.payload.some
         override def recover(b: AdapterFailures)(config: Config) = {
           def update(b: AdapterFailures)(p: Payload.CollectorPayload) = b.copy(payload = p)
           step(config, AdapterFailuresFlow, b.payload)(new Modify[Payload.CollectorPayload](_)).bimap(update(b), update(b))
@@ -54,7 +68,7 @@ object recoverable {
 
     implicit val trackerProtocolViolationsRecovery: Recoverable[TrackerProtocolViolations, Payload.CollectorPayload] =
       new Recoverable[TrackerProtocolViolations, Payload.CollectorPayload] {
-        override def payload(b: TrackerProtocolViolations) = b.payload
+        override def payload(b: TrackerProtocolViolations) = b.payload.some
         override def recover(b: TrackerProtocolViolations)(config: Config) = {
           def update(b: TrackerProtocolViolations)(p: Payload.CollectorPayload) = b.copy(payload = p)
           step(config, TrackerProtocolViolationsFlow, b.payload)(new Modify[Payload.CollectorPayload](_)).bimap(update(b), update(b))
@@ -63,7 +77,7 @@ object recoverable {
 
     implicit val schemaViolationsRecovery: Recoverable[SchemaViolations, Payload.EnrichmentPayload] =
       new Recoverable[SchemaViolations, Payload.EnrichmentPayload] {
-        override def payload(b: SchemaViolations) = b.payload
+        override def payload(b: SchemaViolations) = b.payload.some
         override def recover(b: SchemaViolations)(config: Config) = {
           def update(b: SchemaViolations)(p: Payload.EnrichmentPayload) = b.copy(payload = p)
           step(config, SchemaViolationsFlow, b.payload)(new Modify[Payload.EnrichmentPayload](_)).bimap(update(b), update(b))
@@ -71,7 +85,7 @@ object recoverable {
       }
 
     implicit val enrichmentFailuresRecovery: Recoverable[EnrichmentFailures, Payload.EnrichmentPayload] = new Recoverable[EnrichmentFailures, Payload.EnrichmentPayload] {
-      override def payload(b: EnrichmentFailures) = b.payload
+      override def payload(b: EnrichmentFailures) = b.payload.some
       override def recover(b: EnrichmentFailures)(config: Config) = {
         def update(b: EnrichmentFailures)(p: Payload.EnrichmentPayload) = b.copy(payload = p)
         step(config, EnrichmentFailuresFlow, b.payload)(new Modify[Payload.EnrichmentPayload](_)).bimap(update(b), update(b))
@@ -79,7 +93,7 @@ object recoverable {
     }
 
     private[this] def unrecoverable[A <: BadRow, B <: Payload] = new Recoverable[A, B] {
-      override def payload(a: A) = ???
+      override def payload(a: A) = None
       override def recover(a: A)(c: Config) = Left(a)
     }
   }

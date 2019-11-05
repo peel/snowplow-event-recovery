@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2018-2019 Snowplow Analytics Ltd. All rights reserved.
+ *
+ * This program is licensed to you under the Apache License Version 2.0,
+ * and you may not use this file except in compliance with the Apache License Version 2.0.
+ * You may obtain a copy of the Apache License Version 2.0 at
+ * http://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the Apache License Version 2.0 is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Apache License Version 2.0 for the specific language governing permissions and
+ * limitations there under.
+ */
 package com.snowplowanalytics.snowplow
 package event.recovery
 
@@ -50,16 +64,9 @@ object inspectable {
       new Inspectable[Payload.EnrichmentPayload] {
         override def replace(p: Payload.EnrichmentPayload)(context: Context, matcher: String, replacement: String) = {
           val failed = Left(p)
-          // TODO remove patmat for >2.11
           (for {
-           top <- extractSegment(context, 1).toRight(p) match {
-             case Right(r) => Right(r)
-             case Left(_) => failed
-            }
-            bottom <- extractSegment(context, 2).toRight(p) match {
-             case Right(r) => Right(r)
-             case Left(_) => failed
-            }
+             top <- extractSegment(context, 1).toRight(p).recoverWith{ case _ => failed}
+             bottom <- extractSegment(context, 2).toRight(p).recoverWith{ case _ => failed}
           } yield (top, bottom)).flatMap {
             case ("rawEvent", "vendor") => p.lens(_.rawEvent.vendor).modify(_.replaceAll(matcher, replacement)).asRight
             case ("rawEvent", "version") => p.lens(_.rawEvent.version).modify(_.replaceAll(matcher, replacement)).asRight
