@@ -51,12 +51,13 @@ object Main extends CommandIOApp(
     val output = Opts.option[String]("output", help = "Output Kinesis topic")
     val config = Opts.option[String](
       "config",
-      help = "Base64 config with schema com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0"
+      help = "Base64 config with schema com.snowplowanalytics.snowplow/recovery_config/jsonschema/1-0-0"
     ).mapValidated(utils.decodeBase64(_).toValidatedNel)
      .mapValidated(json => utils.validateConfiguration[Id](json).toValidatedNel.map(_ => json))
      .mapValidated(utils.loadConfig(_).toValidatedNel)
     (input, output, config).mapN { (i, o, c) => IO(RecoveryJob.run(i, o, c)).as(ExitCode.Success) }
   }
+
   implicit val catsClockIdInstance: Clock[Id] = new Clock[Id] {
     override def realTime(unit: TimeUnit): Id[Long] =
       unit.convert(System.nanoTime(), NANOSECONDS)

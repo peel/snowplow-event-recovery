@@ -22,6 +22,10 @@ import com.spotify.scio.{ContextAndArgs, ScioContext}
 import io.circe.generic.auto._
 import io.circe.parser.decode
 
+import cats.effect.Clock
+import cats.Id
+import scala.concurrent.duration.{TimeUnit, MILLISECONDS, NANOSECONDS}
+
 import config._
 import recoverable._, Recoverable.ops._
 import com.snowplowanalytics.snowplow.badrows._
@@ -32,14 +36,14 @@ object Main {
     val (sc, args) = ContextAndArgs(cmdlineArgs)
     val input = args.optional("inputDirectory").toValidNel("Input GCS path is mandatory")
     val output = args.optional("outputTopic").toValidNel("Output PubSub topic is mandatory")
-    val recoveryScenarios = (for {
+    val config = (for {
       config <- args.optional("config").toRight("Base64-encoded configuration with schema " +
         "com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0 is mandatory")
       decoded <- utils.decodeBase64(config)
-      _ <- utils.validateConfig(config)
+      _ <- utils.validateConfiguration(decoded).value
       cfg <- utils.loadConfig(decoded)
-    } yield cfg).toValidatedNel
-    (input, output, recoveryScenarios).tupled match {
+     } yield cfg).toValidatedNel
+    (input, output, config).tupled match {
       case Valid((i, o, cfg)) =>
         RecoveryJob.run(sc, i, o, cfg)
         val _ = sc.close()
@@ -49,6 +53,13 @@ object Main {
         System.exit(1)
     }
   }
+  implicit val catsClockIdInstance: Clock[Id] = new Clock[Id] {
+    override def realTime(unit: TimeUnit): Id[Long] =
+      unit.convert(System.nanoTime(), NANOSECONDS)
+    override def monotonic(unit: TimeUnit): Id[Long] =
+      unit.convert(System.currentTimeMillis(), MILLISECONDS)
+  }
+
 }
 
 object RecoveryJob {

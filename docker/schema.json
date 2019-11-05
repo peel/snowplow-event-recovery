@@ -9,36 +9,38 @@
     "version": "1-0-0"
   },
   "properties": {
-    "iglu-resolver": {
+    "resolver": {
       "$ref": "???"
     },
-    "AdapterFailures": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/step"
+    "recovery": {
+      "AdapterFailures": {
+          "type": "array",
+          "items": {
+              "$ref": "#/definitions/step"
+          },
+          "description": "Steps to be applied for Adapter Failures Bad Row type"
       },
-      "description": "Steps to be applied for Adapter Failures Bad Row type"
-    },
-    "TrackerProtocolViolations": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/step"
+      "TrackerProtocolViolations": {
+          "type": "array",
+          "items": {
+              "$ref": "#/definitions/step"
+          },
+          "description": "Steps to be applied for Tracker Protocol Violations Bad Row type"
       },
-      "description": "Steps to be applied for Tracker Protocol Violations Bad Row type"
-    },
-    "SchemaViolations": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/step"
+      "SchemaViolations": {
+          "type": "array",
+          "items": {
+              "$ref": "#/definitions/step"
+          },
+          "description": "Steps to be applied for Schema Violations Bad Row type"
       },
-      "description": "Steps to be applied for Schema Violations Bad Row type"
-    },
-    "EnrichmentFailures": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/step"
-      },
-      "description": "Steps to be applied for Enrichment Failures Bad Row type"
+      "EnrichmentFailures": {
+          "type": "array",
+          "items": {
+              "$ref": "#/definitions/step"
+          },
+          "description": "Steps to be applied for Enrichment Failures Bad Row type"
+      }
     }
   },
   "definitions": {
