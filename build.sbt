@@ -24,7 +24,7 @@ lazy val buildSettings = Seq(
 
 lazy val snowplowEventRecovery = (project.in(file(".")))
   .settings(buildSettings)
-  .aggregate(core, flink)
+  .aggregate(core, beam, flink)
   .dependsOn(core)
 
 lazy val thriftSchemaVersion = "0.0.0"
@@ -78,56 +78,7 @@ lazy val core = project
     ) ++ circeDependencies
   )
 
-// lazy val sparkVersion = "2.3.2"
-// lazy val framelessVersion = "0.6.1"
-// lazy val structTypeEncoderVersion = "0.3.0"
 lazy val declineVersion = "0.5.0"
-// lazy val hadoopLzoVersion = "0.4.20"
-// lazy val elephantBirdVersion = "4.17"
-
-// lazy val spark = project
-//   .settings(packageName := "snowplow-event-recovery-spark")
-//   .settings(buildSettings)
-//   .settings(
-//     description := "Snowplow event recovery job for AWS",
-//     resolvers += "Twitter Maven Repo" at "http://maven.twttr.com/",
-//     libraryDependencies ++= Seq(
-//       "org.typelevel" %% "frameless-dataset" % framelessVersion,
-//       "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-//       "org.apache.spark" %% "spark-sql"  % sparkVersion % "provided",
-//       "com.github.benfradet" %% "struct-type-encoder" % structTypeEncoderVersion,
-//       "com.monovore" %% "decline" % declineVersion,
-//       "com.hadoop.gplcompression" % "hadoop-lzo" % hadoopLzoVersion,
-//       "com.twitter.elephantbird" % "elephant-bird-core" % elephantBirdVersion,
-//     )
-//   ).settings(
-//     initialCommands in console :=
-//       """
-//         |import org.apache.spark.{SparkConf, SparkContext}, org.apache.spark.sql.SparkSession
-//         |import frameless.functions.aggregate._, frameless.syntax._, frameless.TypedDataset
-//         |val conf = new SparkConf().setMaster("local[*]").setAppName("frameless-repl").set("spark.ui.enabled", "false")
-//         |implicit val spark = SparkSession.builder().config(conf).appName("recovery").getOrCreate()
-//         |import spark.implicits._
-//         |spark.sparkContext.setLogLevel("WARN")
-//       """.stripMargin,
-//     cleanupCommands in console :=
-//       """
-//         |spark.stop()
-//       """.stripMargin
-//   ).settings(
-//     assemblyJarName in assembly := { packageName.value + "-" + version.value + ".jar" },
-//     assemblyMergeStrategy in assembly := {
-//       case x if x.startsWith("META-INF") => MergeStrategy.discard
-//       case x if x.endsWith(".html") => MergeStrategy.discard
-//       case x if x.endsWith("package-info.class") => MergeStrategy.first
-//       case PathList("org", "apache", "spark", "unused", tail@_*) => MergeStrategy.first
-//       case "build.properties" => MergeStrategy.first
-//       case x =>
-//         val oldStrategy = (assemblyMergeStrategy in assembly).value
-//         oldStrategy(x)
-//     }
-//   ).dependsOn(core % "compile->compile;test->test")
-
 lazy val scioVersion = "0.6.1"
 lazy val beamVersion = "2.5.0"
 lazy val scalaMacrosVersion = "2.1.0"
@@ -184,7 +135,6 @@ lazy val flink = project
   ).settings(
     assemblyJarName in assembly := { packageName.value + "-" + version.value + ".jar" },
     assemblyOption in assembly  := (assemblyOption in assembly).value.copy(includeScala = false),
-    // mainClass in assembly := Some("com.snowplowanalytics.event.recovery.RecoveryJob")
   ).settings(
     Compile / run  := Defaults.runTask(Compile / fullClasspath,
                                        Compile / run / mainClass,
@@ -194,17 +144,17 @@ lazy val flink = project
     Global / cancelable := true
   ).dependsOn(core % "compile->compile;test->test")
 
-// lazy val repl: Project = Project(
-//   "repl",
-//   file(".repl")
-// ).settings(
-//   buildSettings ++ macroSettings,
-//   description := "Scio REPL for snowplow-event-recovery",
-//   libraryDependencies ++= Seq(
-//     "com.spotify" %% "scio-repl" % scioVersion
-//   ),
-//   mainClass in Compile := Some("com.spotify.scio.repl.ScioShell")
-// ).dependsOn(beam)
+lazy val repl: Project = Project(
+  "repl",
+  file(".repl")
+).settings(
+  buildSettings ++ macroSettings,
+  description := "Scio REPL for snowplow-event-recovery",
+  libraryDependencies ++= Seq(
+    "com.spotify" %% "scio-repl" % scioVersion
+  ),
+  mainClass in Compile := Some("com.spotify.scio.repl.ScioShell")
+).dependsOn(beam)
 
 def makeColorConsole() = {
   val ansi = System.getProperty("sbt.log.noformat", "false") != "true"
