@@ -35,44 +35,28 @@ class UtilsSpec extends FreeSpec with PropertyChecks with EitherValues {
       }
     }
   }
+
+  "decodeBase64" - {
+    "should successfully decode base64" in {
+      decodeBase64("YWJjCg==") shouldEqual Right("abc\n")
+    }
+    "should send an error message if not base64" in {
+      decodeBase64("é").left.value should include("Configuration is not properly base64-encoded")
+    }
+  }
+
+  val json = """{"schema":"iglu:com.snowplowanalytics/recovery_config/jsonschema/1-0-0","data":{"resolver":{"schema":"iglu:com.snowplowanalytics.iglu/resolver-config/jsonschema/1-0-1","data":{"cacheSize":5,"repositories":[{"name":"Iglu Central","priority":0,"vendorPrefixes":["com.snowplowanalytics"],"connection":{"http":{"uri":"http://iglucentral.com"}}}]}},"recovery":{"AdapterFailures":[{"context":"body","matcher":"body","replacement":"new-body"},{"context":"query","matcher":"query","replacement":"new-query"}]}}}"""
+
+  "validateConfiguration" - {
+    "should successfully validate a properly schemad json" in {
+      validateConfiguration(json).value shouldEqual Right(())
+    }
+    "should fail when validating something that is not json" in {
+      validateConfiguration("abc").value.left.value should include("ParsingFailure: expected json value got 'abc' (line 1, column 1)")
+    }
+    "should fail when validating something that is not according to schema" in {
+      val json = """{"schema":"iglu:com.snowplowanalytics/recovery_config/jsonschema/1-0-0","data":{"resolver":{},"recovery":{"AdapterFailure":[{"context":"body","matcher":"body","replacement":"new-body"},{"context":"query","matcher":"query","replacement":"new-query"}]}}}"""
+      validateConfiguration(json).value.left.value should include("DecodingFailure at : schema key is not available")
+    }
+  }
 }
-//   "decodeBase64" - {
-//     "should successfully decode base64" in {
-//       decodeBase64("YWJjCg==") shouldEqual Right("abc\n")
-//     }
-//     "should send an error message if not base64" in {
-//       decodeBase64("é").left.value should include("Configuration is not properly base64-encoded")
-//     }
-//   }
-
-//   val json = """{"schema":"iglu:com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0","data":[{"name":"ReplaceInBody","error":"","toReplace":"nam","replacement":"name"}]}"""
-
-//   "parseRecoveryScenarios" - {
-//     "should successfully parse a well-formed list of reco scenarios" in {
-//       parseRecoveryScenarios(json) shouldEqual Right(List(ReplaceInBody("", "nam", "name")))
-//     }
-//     "should fail at parsing non json" in {
-//       parseRecoveryScenarios("abc") shouldEqual
-//         Left("Configuration is not properly formatted: expected json value got 'abc' (line 1, column 1)")
-//     }
-//     "should fail at parsing a json which doesn't have a data field" in {
-//       parseRecoveryScenarios("""{"abc":12}""").left.value should include("Configuration is not properly formatted")
-//     }
-//     "should fail at parsing a json which is not a list of reco scenarios" in {
-//       parseRecoveryScenarios("""{"data":[{"abc":12}]}""").left.value should include("Configuration is not properly formatted")
-//     }
-//   }
-
-//   "validateConfiguration" - {
-//     "should successfully validate a properly schemad json" in {
-//       validateConfiguration(json) shouldEqual Right(())
-//     }
-//     "should fail when validating something that is not json" in {
-//       validateConfiguration("abc").left.value should include("Unexpected character ('a'")
-//     }
-//     "should fail when validating something that is not according to schema" in {
-//       val json = """{"schema":"iglu:com.snowplowanalytics.snowplow/recoveries/jsonschema/1-0-0","data":[{"abc":12}]}"""
-//       validateConfiguration(json).left.value should include("error: instance failed to match at least one required schema among 5")
-//     }
-//   }
-// }
