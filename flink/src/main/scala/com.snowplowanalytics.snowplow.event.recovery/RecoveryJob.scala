@@ -105,19 +105,11 @@ object RecoveryJob {
       .process(new SplitByStatus(tag))
 
     lines
-      .getSideOutput(tag)
-      .map(v => s"Failed: $v")
-      .print()
-
-    lines
       .map(utils.coerce(_))
       .filter(_.isDefined)
       .map(_.get)
       .map(utils.thriftSer)
       .addSink(kinesis)
-
-    lines
-      .print()
 
     env.execute("Event recovery job started.")
     ()
