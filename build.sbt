@@ -161,6 +161,7 @@ lazy val beam = project
   .enablePlugins(JavaAppPackaging)
 
 lazy val flinkVersion = "1.9.0"
+lazy val mockitoVersion = "1.9.0"
 
 lazy val flink = project
   .settings(packageName := "snowplow-event-recovery-flink")
@@ -177,7 +178,8 @@ lazy val flink = project
       "org.apache.flink" %% "flink-connector-kinesis" % flinkVersion % "provided",
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
-      "io.circe" %% "circe-parser" % circeVersion
+      "io.circe" %% "circe-parser" % circeVersion,
+      "org.mockito" % "mockito-all" % mockitoVersion % "test"
     )
   ).settings(
     assemblyJarName in assembly := { packageName.value + "-" + version.value + ".jar" },
