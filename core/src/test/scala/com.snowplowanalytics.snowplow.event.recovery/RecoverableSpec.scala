@@ -20,46 +20,48 @@ import org.scalatest.Matchers._
 import org.scalatest.EitherValues._
 import org.scalatestplus.scalacheck._
 import org.scalacheck._
-import org.scalacheck.ScalacheckShapeless._
-import com.fortysevendeg.scalacheck.datetime.jdk8.ArbitraryJdk8._
 
 import com.snowplowanalytics.snowplow.badrows._
 import recoverable.Recoverable.ops._
 import config.{Config, Removal, Replacement}
+import gens._
+
+case class Field(name: String, value: Any)
+object Field {
+  def apply[A <: Product](payload: A): Field = {
+    val fields = payload.getClass.getDeclaredFields.toList.map(_.getName).zipWithIndex.filterNot{case (v, _) => Seq("querystring", "headers", "networkUserId", "userId", "timestamp").contains(v)}.toMap
+    val filteredFieldId = Gen.chooseNum(0, fields.size-1).sample.get
+    val fieldId = fields.values.toList(filteredFieldId)
+    val field = fields.keys.toList(filteredFieldId)
+    val fieldValue = payload.productIterator.toList(fieldId)
+    Field(field, fieldValue)
+  }
+  def extract[A <: Product](payload: A, name: String): Option[Field] =
+    payload.getClass.getDeclaredFields.toList.map(_.getName).zip(payload.productIterator.toList).toMap.get(name).map(Field(name, _))
+}
 
 class RecoveryScenarioSpec extends FreeSpec with Inspectors with ScalaCheckPropertyChecks {
-  implicit val processorA = implicitly[Arbitrary[Processor]]
-  implicit val adapterFailureA = implicitly[Arbitrary[FailureDetails.AdapterFailure]]
-  implicit val adapterFailuresA = implicitly[Arbitrary[Failure.AdapterFailures]]
-  implicit val collectorPayloadA = implicitly[Arbitrary[Payload.CollectorPayload]]
-  implicit val badRowAdapterFailuresA = implicitly[Arbitrary[BadRow.AdapterFailures]]
-  implicit val badRowTrackerProtocolViolationsA = implicitly[Arbitrary[BadRow.TrackerProtocolViolations]]
-
   val anyString = "(?U)^.*$"
   val prefix = "replacement"
 
   "Recoverable" - {
     "allow matcher-based field content replacement" in {
       forAll { (b: BadRow.AdapterFailures) =>
-        val fields = b.payload.getClass.getDeclaredFields.toList.map(_.getName).zipWithIndex.filterNot{case (v, _) => Seq("querystring", "headers").contains(v)}.toMap
-        val filteredFieldId = Gen.chooseNum(0, fields.size-1).sample.get
-        val fieldId = fields.values.toList(filteredFieldId)
-        val field = fields.keys.toList(filteredFieldId)
-        val fieldValue = b.payload.productIterator.toList(fieldId)
-        val replacement = s"$prefix$field"
+        val field = Field(b.payload)
+        val replacement = s"$prefix${field.name}"
 
-        val conf: Config = Map(config.AdapterFailures -> List(Replacement(field, anyString, replacement)))
+        val conf: Config = Map(config.AdapterFailures -> List(Replacement(field.name, anyString, replacement)))
         val recovered = b.recover(conf)
         recovered should be ('right)
-        fieldValue match {
+        field.value match {
           case Some(_) => recovered.right.value should not equal (b)
           case _: String => recovered.right.value should not equal (b)
           case _ => recovered.right.value should equal (b)
         }
 
-        val revert: Config = fieldValue match {
-          case Some(v) => Map(config.AdapterFailures -> List(Replacement(field, anyString, v.toString)))
-          case v: String => Map(config.AdapterFailures -> List(Replacement(field, anyString, v)))
+        val revert: Config = field.value match {
+          case Some(v) => Map(config.AdapterFailures -> List(Replacement(field.name, anyString, v.toString)))
+          case v: String => Map(config.AdapterFailures -> List(Replacement(field.name, anyString, v)))
           case _ => Map.empty
         }
         val reverted = recovered.right.get.recover(revert)
@@ -69,24 +71,32 @@ class RecoveryScenarioSpec extends FreeSpec with Inspectors with ScalaCheckPrope
     }
     "allow matcher-based field content removal" in {
       forAll { (b: BadRow.TrackerProtocolViolations) =>
-        val field = "vendor" // TODO gen
-        val conf: Config = Map(config.TrackerProtocolViolations -> List(Removal(field, anyString)))
+        val field = Field(b.payload)
+        val conf: Config = Map(config.TrackerProtocolViolations -> List(Removal(field.name, anyString)))
 
         val recovered = b.recover(conf)
         recovered should be ('right)
-        recovered.map(_.payload.vendor).right.value shouldEqual ""
+        recovered.map(v => Field.extract(v.payload, field.name).map(_.value)).right.value.get match {
+          case Some(v) => v shouldEqual ""
+          case None => true
+          case v => v shouldEqual ""
+        }
       }
     }
     "allow chaining processing steps" in {
       forAll { (b: BadRow.AdapterFailures) =>
-        val field = "vendor" // TODO gen
-        val replacement = s"$prefix$field"
+        val field = Field(b.payload)
+        val replacement = s"$prefix${field.name}"
 
-        val conf: Config = Map(config.AdapterFailures -> List(Replacement(field, anyString, replacement), Removal(field, field)))
+        val conf: Config = Map(config.AdapterFailures -> List(Replacement(field.name, anyString, replacement), Removal(field.name, field.name)))
 
         val recovered = b.recover(conf)
         recovered should be ('right)
-        recovered.map(_.payload.vendor).right.value shouldEqual prefix
+        recovered.map(v => Field.extract(v.payload, field.name).map(_.value)).right.value.get match {
+          case Some(v) => v shouldEqual prefix
+          case None => true
+          case v => v shouldEqual prefix
+        }
       }
     }
     "mark flows unercoverable" in {

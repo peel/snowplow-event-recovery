@@ -56,7 +56,6 @@ object recoverable {
     implicit val sizeViolationRecovery: Recoverable[SizeViolation, Payload.RawPayload] = unrecoverable
     implicit val cpFormatViolationRecovery: Recoverable[CPFormatViolation, Payload.RawPayload] = unrecoverable
 
-    // TODO can we generate?
     implicit val adapterFailuresRecovery: Recoverable[AdapterFailures, Payload.CollectorPayload] =
       new Recoverable[AdapterFailures, Payload.CollectorPayload] {
         override def payload(b: AdapterFailures) = b.payload.some

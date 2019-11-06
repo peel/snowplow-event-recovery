@@ -27,12 +27,12 @@ object steps {
   }
 
   class Precondition[A <: Payload] extends Step[A] {
-    // TODO what should it do?
+    // FIXME what should it do?
     val recover: A => Either[A, A] = a => Right(a)
   }
 
   class PassThrough[A <: Payload] extends Step[A] {
-    // TODO what should it do?
+    // FIXME what should it do?
     val recover: A => Either[A, A] = a => Right(a)
   }
 

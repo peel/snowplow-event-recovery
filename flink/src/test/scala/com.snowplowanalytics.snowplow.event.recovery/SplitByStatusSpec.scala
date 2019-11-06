@@ -18,9 +18,7 @@ package event.recovery
 import org.scalatest.{FreeSpec, EitherValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-import org.scalacheck.{Arbitrary, Gen}
-import org.scalacheck.ScalacheckShapeless._
-import com.fortysevendeg.scalacheck.datetime.jdk8.ArbitraryJdk8._
+import org.scalacheck.Gen
 
 import org.apache.flink.util.Collector
 import org.apache.flink.streaming.api.scala.OutputTag
@@ -29,13 +27,9 @@ import typeinfo._
 import org.mockito.Mockito._
 
 import com.snowplowanalytics.snowplow.badrows._
+import gens._
 
 class SplitByStatusSpec extends FreeSpec with ScalaCheckPropertyChecks with EitherValues with MockitoSugar {
-  implicit val processorA = implicitly[Arbitrary[Processor]]
-  implicit val adapterFailureA = implicitly[Arbitrary[FailureDetails.AdapterFailure]]
-  implicit val adapterFailuresA = implicitly[Arbitrary[Failure.AdapterFailures]]
-  implicit val collectorPayloadA = implicitly[Arbitrary[Payload.CollectorPayload]]
-  implicit val badRowAdapterFailuresA = implicitly[Arbitrary[BadRow.AdapterFailures]]
   implicit val eitherBRorPayload = Gen.either(badRowAdapterFailuresA.arbitrary, collectorPayloadA.arbitrary)
 
   "SplitByStatus" - {

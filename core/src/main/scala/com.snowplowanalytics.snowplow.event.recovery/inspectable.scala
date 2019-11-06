@@ -15,6 +15,10 @@
 package com.snowplowanalytics.snowplow
 package event.recovery
 
+import java.util.UUID
+import org.joda.time.DateTime
+import org.joda.time.format.ISODateTimeFormat
+
 import com.snowplowanalytics.snowplow.badrows._
 import config.{Context, Matcher}
 import cats.implicits._
@@ -38,22 +42,21 @@ object inspectable {
     implicit val collectorPayloadInspectable: Inspectable[Payload.CollectorPayload] =
       new Inspectable[Payload.CollectorPayload] {
         override def replace(p: Payload.CollectorPayload)(context: Context, matcher: Matcher, replacement: String) = {
-          def fix(str: String) = matcher.r.replaceAllIn(str, replacement)
           extractContext(context).headOption.toRight(p) flatMap {
-            case "vendor" => p.lens(_.vendor).modify(fix).asRight
-            case "version" => p.lens(_.version).modify(fix).asRight
-            case "querystring" => p.lens(_.querystring).modify(_.map(_.lens(_.value).modify(_.map(fix)))).asRight
-            case "contentType" => p.lens(_.contentType).modify(_.map(fix)).asRight
-            case "body" => p.lens(_.body).modify(_.map(fix)).asRight
-            case "collector" => p.lens(_.collector).modify(fix).asRight
-            case "encoding" => p.lens(_.encoding).modify(fix).asRight
-            case "hostname" => p.lens(_.hostname).modify(_.map(fix)).asRight
-            case "timestamp" => p.lens(_.timestamp).modify(_.map(fix)).asRight
-            case "ipAddress" => p.lens(_.ipAddress).modify(_.map(fix)).asRight
-            case "useragent" => p.lens(_.useragent).modify(_.map(fix)).asRight
-            case "refererUri" => p.lens(_.refererUri).modify(_.map(fix)).asRight
-            case "headers" => p.lens(_.headers).modify(_.map(fix)).asRight
-            case "networkUserId" => p.lens(_.networkUserId).modify(_.map(fix)).asRight
+            case "vendor" => p.lens(_.vendor).modify(fix(matcher, replacement)).asRight
+            case "version" => p.lens(_.version).modify(fix(matcher, replacement)).asRight
+            case "querystring" => p.lens(_.querystring).modify(_.map(_.lens(_.value).modify(_.map(fix(matcher, replacement))))).asRight
+            case "contentType" => p.lens(_.contentType).modify(_.map(fix(matcher, replacement))).asRight
+            case "body" => p.lens(_.body).modify(_.map(fix(matcher, replacement))).asRight
+            case "collector" => p.lens(_.collector).modify(fix(matcher, replacement)).asRight
+            case "encoding" => p.lens(_.encoding).modify(fix(matcher, replacement)).asRight
+            case "hostname" => p.lens(_.hostname).modify(_.map(fix(matcher, replacement))).asRight
+            case "timestamp" => p.lens(_.timestamp).modify(_.map(fixDate(matcher, replacement))).asRight
+            case "ipAddress" => p.lens(_.ipAddress).modify(_.map(fix(matcher, replacement))).asRight
+            case "useragent" => p.lens(_.useragent).modify(_.map(fix(matcher, replacement))).asRight
+            case "refererUri" => p.lens(_.refererUri).modify(_.map(fix(matcher, replacement))).asRight
+            case "headers" => p.lens(_.headers).modify(_.map(fix(matcher, replacement))).asRight
+            case "networkUserId" => p.lens(_.networkUserId).modify(_.map(fixUuid(matcher, replacement))).asRight
             case _ => Left(p)
           }
         }
@@ -68,28 +71,38 @@ object inspectable {
              top <- extractSegment(context, 1).toRight(p).recoverWith{ case _ => failed}
              bottom <- extractSegment(context, 2).toRight(p).recoverWith{ case _ => failed}
           } yield (top, bottom)).flatMap {
-            case ("rawEvent", "vendor") => p.lens(_.rawEvent.vendor).modify(_.replaceAll(matcher, replacement)).asRight
-            case ("rawEvent", "version") => p.lens(_.rawEvent.version).modify(_.replaceAll(matcher, replacement)).asRight
-            case ("rawEvent", "parameters") => extractSegment(context, 3).toRight(p).flatMap { v =>
-              p.lens(_.rawEvent.parameters).composeLens(at(v)).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("raw", "vendor") => p.lens(_.raw.vendor).modify(fix(matcher, replacement)).asRight
+            case ("raw", "version") => p.lens(_.raw.version).modify(fix(matcher, replacement)).asRight
+            case ("raw", "parameters") => extractSegment(context, 3).toRight(p).flatMap { v =>
+              p.lens(_.raw.parameters).composeLens(at(v)).modify(_.map(fix(matcher, replacement))).asRight
             }
-            case ("rawEvent", "contentType") => p.lens(_.rawEvent.contentType).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case ("rawEvent", "loaderName") => p.lens(_.rawEvent.loaderName).modify(_.replaceAll(matcher, replacement)).asRight
-            case ("rawEvent", "encoding") => p.lens(_.rawEvent.encoding).modify(_.replaceAll(matcher, replacement)).asRight
-            case ("rawEvent", "hostname") => p.lens(_.rawEvent.hostname).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case ("rawEvent", "timestamp") => p.lens(_.rawEvent.timestamp).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case ("rawEvent", "ipAddress") => p.lens(_.rawEvent.ipAddress).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case ("rawEvent", "useragent") => p.lens(_.rawEvent.useragent).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case ("rawEvent", "refererUri") => p.lens(_.rawEvent.refererUri).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case ("rawEvent", "headers") => p.lens(_.rawEvent.headers).modify(_.map(_.replaceAll(matcher, replacement))).asRight
-            case ("rawEvent", "userId") => p.lens(_.rawEvent.userId).modify(_.map(_.replaceAll(matcher, replacement))).asRight
+            case ("raw", "contentType") => p.lens(_.raw.contentType).modify(_.map(fix(matcher, replacement))).asRight
+            case ("raw", "loaderName") => p.lens(_.raw.loaderName).modify(fix(matcher, replacement)).asRight
+            case ("raw", "encoding") => p.lens(_.raw.encoding).modify(fix(matcher, replacement)).asRight
+            case ("raw", "hostname") => p.lens(_.raw.hostname).modify(_.map(fix(matcher, replacement))).asRight
+            case ("raw", "timestamp") => p.lens(_.raw.timestamp).modify(_.map(fixDate(matcher, replacement))).asRight
+            case ("raw", "ipAddress") => p.lens(_.raw.ipAddress).modify(_.map(fix(matcher, replacement))).asRight
+            case ("raw", "useragent") => p.lens(_.raw.useragent).modify(_.map(fix(matcher, replacement))).asRight
+            case ("raw", "refererUri") => p.lens(_.raw.refererUri).modify(_.map(fix(matcher, replacement))).asRight
+            case ("raw", "headers") => p.lens(_.raw.headers).modify(_.map(fix(matcher, replacement))).asRight
+            case ("raw", "userId") => p.lens(_.raw.userId).modify(_.map(fixUuid(matcher, replacement))).asRight
             case _ => failed
           }
         }
       }
   }
-
   private[this] def extractContext(stringContext: String) = stringContext.split('.')
   private[this] def extractSegment(stringContext: String, n: Int) = Either.catchNonFatal(extractContext(stringContext)(n)).toOption
+  def fix(matcher: String, replacement: String)(str: String) = matcher.r.replaceAllIn(str, replacement)
+  def fixDate(matcher: String, replacement: String)(dt: DateTime) = {
+    val str = dt.toString(ISODateTimeFormat.basicDateTime())
+    val replaced = fix(matcher, replacement)(str)
+    Either.catchNonFatal(ISODateTimeFormat.dateTimeParser.parseDateTime(replaced)).getOrElse(dt)
+  }
+  def fixUuid(matcher: String, replacement: String)(u: UUID) = {
+    val str = u.toString
+    val replaced = fix(matcher, replacement)(str)
+    Either.catchNonFatal(UUID.fromString(replaced)).getOrElse(u)
+  }
 
 }

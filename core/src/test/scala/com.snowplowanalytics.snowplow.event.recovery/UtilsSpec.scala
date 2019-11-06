@@ -21,8 +21,6 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import CollectorPayload.thrift.model1.CollectorPayload
 import gens._
-
-// import RecoveryScenario._
 import utils._
 
 class UtilsSpec extends FreeSpec with ScalaCheckPropertyChecks with EitherValues {

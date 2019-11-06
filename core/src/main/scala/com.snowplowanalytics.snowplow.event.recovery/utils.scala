@@ -16,7 +16,6 @@ package com.snowplowanalytics
 package snowplow
 package event.recovery
 
-import java.time.Instant
 import java.util.Base64
 import scala.collection.JavaConverters._
 
@@ -90,7 +89,7 @@ object utils {
       val cp = new CollectorPayload(
         s"iglu:${p.vendor}/CollectorPayload/thrift/${p.version}",
         p.ipAddress.orNull,
-        p.timestamp.map(Instant.parse).map(_.toEpochMilli).getOrElse(0),
+        p.timestamp.map(_.getMillis).getOrElse(0),
         p.encoding,
         p.collector
       )
@@ -101,16 +100,17 @@ object utils {
       cp.headers = p.headers.asJava
       cp.contentType = p.contentType.orNull
       cp.hostname = p.hostname.orNull
-      cp.networkUserId = p.networkUserId.orNull
+      cp.networkUserId = p.networkUserId.map(_.toString).orNull
       Some(cp)
     }
     case Payload.EnrichmentPayload(_, p) => {
       val cp = new CollectorPayload(
         s"iglu:${p.vendor}/CollectorPayload/thrift/${p.version}",
         p.ipAddress.orNull,
-        p.timestamp.map(Instant.parse).map(_.toEpochMilli).getOrElse(0),
+        p.timestamp.map(_.getMillis).getOrElse(0),
         p.encoding,
-        null // FIXME p.collector?
+        // FIXME
+        null
       )
       cp.userAgent = p.useragent.orNull
       cp.refererUri = p.refererUri.orNull
@@ -119,7 +119,7 @@ object utils {
       cp.headers = p.headers.asJava
       cp.contentType = p.contentType.orNull
       cp.hostname = p.hostname.orNull
-      cp.networkUserId = p.userId.orNull
+      cp.networkUserId = p.userId.map(_.toString).orNull
       Some(cp)
     }
     case _ => None

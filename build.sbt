@@ -28,7 +28,7 @@ lazy val snowplowEventRecovery = (project.in(file(".")))
   .dependsOn(core)
 
 lazy val thriftSchemaVersion = "0.0.0"
-lazy val badRowsVersion = "0.1.0-M5"
+lazy val badRowsVersion = "0.1.0-M6"
 lazy val catsVersion = "1.4.0"
 lazy val scalaUriVersion = "1.4.0"
 lazy val circeOpticsVersion = "0.10.0"

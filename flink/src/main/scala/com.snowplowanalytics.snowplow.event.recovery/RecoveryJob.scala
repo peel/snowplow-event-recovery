@@ -16,15 +16,11 @@ package com.snowplowanalytics.snowplow.event.recovery
 
 import java.util.Properties
 
-import org.apache.flink.util.{OutputTag => JOutputTag}
-
-import org.apache.flink.util.Collector
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.streaming.api.scala.{OutputTag, StreamExecutionEnvironment}
 import org.apache.flink.streaming.connectors.kinesis._
 import org.apache.flink.streaming.connectors.kinesis.config._
-import org.apache.flink.streaming.api.functions.ProcessFunction
-import org.apache.flink.api.common.functions.RichFlatMapFunction
+
 import org.apache.flink.api.common.typeinfo.TypeInformation
 
 import com.monovore.decline._
@@ -32,6 +28,7 @@ import com.monovore.decline.effect._
 
 import cats.effect._
 import cats.implicits._
+import io.circe.parser.decode
 
 import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.CollectorPayload
 import com.snowplowanalytics.snowplow.badrows._
@@ -44,7 +41,6 @@ import cats.Id
 import scala.concurrent.duration.{TimeUnit, MILLISECONDS, NANOSECONDS}
 
 object typeinfo {
-  // TODO Flink's macros cause unused import on `package`
   implicit val badRowT: TypeInformation[BadRow] = TypeInformation.of(classOf[BadRow])
   implicit val eitherAForAFT: TypeInformation[Either[BadRow, BadRow]] = TypeInformation.of(classOf[Either[BadRow, BadRow]])
   implicit val eitherBBT: TypeInformation[Either[BadRow, BadRow.AdapterFailures]] = TypeInformation.of(classOf[Either[BadRow, BadRow.AdapterFailures]])
@@ -103,7 +99,6 @@ object RecoveryJob {
       producer
     }
 
-    // TODO can this be done better with Flink?
     def unpack(cfg: Config, b: BadRow): Either[BadRow, Payload] = b match {
       case r: BadRow.AdapterFailures => r.recover(cfg).map(_.payload)
       case r: BadRow.TrackerProtocolViolations => r.recover(cfg).map(_.payload)
@@ -111,10 +106,11 @@ object RecoveryJob {
       case r: BadRow.EnrichmentFailures => r.recover(cfg).map(_.payload)
       case l => Left(l)
     }
+
     val tag = OutputTag[String]("failed")
     def lines = env
       .readFileStream(s"s3://$input")
-      .flatMap(FlatMapDeserialize)
+      .flatMap(decode[BadRow](_).toOption)
       .map(unpack(cfg, _))
       .process(new SplitByStatus(tag))
 
@@ -128,20 +124,4 @@ object RecoveryJob {
     env.execute("Event recovery job started.")
     ()
   }
-}
-
-object FlatMapDeserialize extends RichFlatMapFunction[String, BadRow] {
-  override def flatMap(str: String, out: Collector[BadRow]): Unit = {
-    badRow(str).foreach(out.collect)
-  }
-
-  def badRow(v: String) = io.circe.parser.decode[BadRow](v).toOption
-}
-
-class SplitByStatus(tag: OutputTag[String]) extends ProcessFunction[Either[BadRow, Payload], Payload] {
-  override def processElement(value: Either[BadRow, Payload], ctx: ProcessFunction[Either[BadRow, Payload], Payload]#Context, out: Collector[Payload]): Unit =
-    value match {
-      case Right(v) => out.collect(v)
-      case Left(v) => ctx.output(tag.asInstanceOf[JOutputTag[Object]], v)
-    }
 }

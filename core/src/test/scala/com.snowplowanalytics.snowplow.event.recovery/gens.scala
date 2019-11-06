@@ -22,12 +22,17 @@ import java.util.concurrent.TimeUnit
 import io.circe.Json
 import io.circe.literal._
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.ScalacheckShapeless._
+import com.fortysevendeg.scalacheck.datetime.joda.ArbitraryJoda._
+import com.fortysevendeg.scalacheck.datetime.jdk8.ArbitraryJdk8._
 
 import CollectorPayload.thrift.model1.CollectorPayload
 import iglu.core.{SchemaKey, SchemaVer}
 import iglu.client.resolver.registries.Registry
 import iglu.client.resolver.Resolver
 import iglu.schemaddl.scalacheck.{IgluSchemas, JsonGenSchema}
+
+import com.snowplowanalytics.snowplow.badrows._
 
 import cats.Id
 import cats.data.EitherT
@@ -79,5 +84,23 @@ object gens {
     }
   }
 
+  implicit def arbUUID: Arbitrary[UUID] = Arbitrary {
+    Gen.delay(UUID.randomUUID)
+  }
+  implicit val processorA = implicitly[Arbitrary[Processor]]
+  implicit val notJsonA = implicitly[Arbitrary[FailureDetails.AdapterFailure.NotJson]]
+  implicit val inputDataA = implicitly[Arbitrary[FailureDetails.AdapterFailure.InputData]]
+  implicit val schemaMappingA = implicitly[Arbitrary[FailureDetails.AdapterFailure.SchemaMapping]]
+  implicit val adapterFailureA: Arbitrary[FailureDetails.AdapterFailure] = Arbitrary(Gen.oneOf(notJsonA.arbitrary, inputDataA.arbitrary, schemaMappingA.arbitrary))
+  implicit val tpvCriterionMismatchA = implicitly[Arbitrary[FailureDetails.TrackerProtocolViolation.CriterionMismatch]]
+  implicit val tpvNotJsonA = implicitly[Arbitrary[FailureDetails.TrackerProtocolViolation.NotJson]]
+  implicit val tpvInputDataA = implicitly[Arbitrary[FailureDetails.TrackerProtocolViolation.InputData]]
+  implicit val trackerProtocolViolationA: Arbitrary[FailureDetails.TrackerProtocolViolation] = Arbitrary(Gen.oneOf(tpvNotJsonA.arbitrary, tpvInputDataA.arbitrary, tpvCriterionMismatchA.arbitrary))
+  implicit val sizeViolationA = implicitly[Arbitrary[Failure.SizeViolation]]
+  implicit val collectorPayloadA = implicitly[Arbitrary[Payload.CollectorPayload]]
+  implicit val badRowAdapterFailuresA = implicitly[Arbitrary[BadRow.AdapterFailures]]
+  implicit val badRowTrackerProtocolViolationsA = implicitly[Arbitrary[BadRow.TrackerProtocolViolations]]
+  implicit val badRowSizeViolationA = implicitly[Arbitrary[BadRow.SizeViolation]]
+  implicit val badRowcpFormatViolationA = implicitly[Arbitrary[BadRow.CPFormatViolation]]
   implicit val uuidGen: Gen[UUID] = Gen.uuid
 }

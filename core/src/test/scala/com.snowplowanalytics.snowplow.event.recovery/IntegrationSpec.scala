@@ -44,7 +44,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 // import config.{Config, Removal, Replacement}
 
 // import org.scalacheck.ScalacheckShapeless._
-// import com.fortysevendeg.scalacheck.datetime.jdk8.ArbitraryJdk8._
+// import com.fortysevendeg.scalacheck.datetime.joda.ArbitraryJoda._
 
 class IntegrationSpec extends FreeSpec with Inspectors with ScalaCheckPropertyChecks {
 //   implicit val processorA = implicitly[Arbitrary[Processor]]
