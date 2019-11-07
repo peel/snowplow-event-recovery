@@ -22,17 +22,26 @@ import inspectable.Inspectable._
 import inspectable.Inspectable.ops._
 
 object steps {
+  /**
+    * A definition of a single recovery process step.
+    * Many subsequent steps form a recovery flow.
+    * The flows are applied to BadRows in recovery process.
+    * @param a type of Payload given Step operates on
+    */
   sealed trait Step[A <: Payload] {
+    /**
+      * Defines a process of application of the `Step` to `A`
+      */
     val recover: A => Either[A, A]
   }
 
   class Precondition[A <: Payload] extends Step[A] {
-    // FIXME what should it do?
+    // FIXME what should Precondition step do on a flow?
     val recover: A => Either[A, A] = a => Right(a)
   }
 
   class PassThrough[A <: Payload] extends Step[A] {
-    // FIXME what should it do?
+    // FIXME what should PassThrough step do on a flow?
     val recover: A => Either[A, A] = a => Right(a)
   }
 

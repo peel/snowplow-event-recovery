@@ -31,14 +31,33 @@ import steps._
 import inspectable.Inspectable._
 
 object recoverable {
+  /**
+    * A typeclass that allows applying recovery scenarios.
+    */
   trait Recoverable[A <: BadRow, B <: Payload] { self =>
+    /**
+      * Apply a recovery configuration flow to given `a`.
+      */
     def recover(a: A)(config: Config): Either[A, A]
+
+    /**
+      * Query `Recoverable`'s payload.
+      * @param recoverable
+      * @return optionally `Recoverable`'s `Payload`
+      */
     def payload(a: A): Option[B]
   }
 
   object Recoverable {
     def apply[A <: BadRow, B <: Payload](implicit r: Recoverable[A, B]): Recoverable[A, B] = r
 
+    /**
+      * Step through configured flow on top of payload.
+      * @param config: recovery configuration
+      * @param flow: a flow which shall be applied
+      * @param payload
+      * @param mkStep: a definition of how to turn `StepConfig` to `Step`
+      */
     def step[B <: Payload](config: Config, flow: Flow, payload: B)(mkStep: StepConfig => Step[B]): Either[B, B] =
       config.get(flow)
         .getOrElse(List.empty)

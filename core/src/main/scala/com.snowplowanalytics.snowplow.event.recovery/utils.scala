@@ -62,6 +62,11 @@ object utils {
     Either.catchNonFatal(new String(Base64.getDecoder.decode(encoded)))
       .leftMap(e => s"Configuration is not properly base64-encoded: ${e.getMessage}")
 
+  /**
+    * Load recovery configuration from configuration json file
+    * @param configuration json file contents as a String
+    * @retunr either an error message or a loaded configuration
+    */
   def loadConfig(str: String): Either[String, config.Config] =
     parseJson(str)
       .flatMap(_.hcursor.downField("data").get[Config]("recovery"))
@@ -84,6 +89,11 @@ object utils {
     } yield ()
   }
 
+  /**
+    * A homomorphic transformation from a `Payload` of a known-type to `CollectorPayload`. 
+    * @param a payload of a bad row
+    * @return optionally a derived `CollectorPayload`
+    */
   def coerce(payload: Payload): Option[CollectorPayload] = payload match {
     case p: Payload.CollectorPayload => {
       val cp = new CollectorPayload(
@@ -109,13 +119,15 @@ object utils {
         p.ipAddress.orNull,
         p.timestamp.map(_.getMillis).getOrElse(0),
         p.encoding,
-        // FIXME
+        // FIXME how to get collector from enrichment payload?
         null
       )
       cp.userAgent = p.useragent.orNull
       cp.refererUri = p.refererUri.orNull
-      // FIXME ??? cp.querystring = azFoldable[List].foldMap(p.querystring)(_.value.getOrElse(""))
-      // FIXME ??? cp.body = p.body.orNull
+      // FIXME how to get querystring from enrichment payload?
+      // cp.querystring = azFoldable[List].foldMap(p.querystring)(_.value.getOrElse(""))
+      // FIXME how to get body from enrichment payload
+      // cp.body = p.body.orNull
       cp.headers = p.headers.asJava
       cp.contentType = p.contentType.orNull
       cp.hostname = p.hostname.orNull

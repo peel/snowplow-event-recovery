@@ -19,26 +19,11 @@ import org.scalatest.{FreeSpec, Inspectors}
 import org.scalatest.Matchers._
 import org.scalatest.EitherValues._
 import org.scalatestplus.scalacheck._
-import org.scalacheck._
 
 import com.snowplowanalytics.snowplow.badrows._
 import recoverable.Recoverable.ops._
 import config.{Config, Removal, Replacement}
 import gens._
-
-case class Field(name: String, value: Any)
-object Field {
-  def apply[A <: Product](payload: A): Field = {
-    val fields = payload.getClass.getDeclaredFields.toList.map(_.getName).zipWithIndex.filterNot{case (v, _) => Seq("querystring", "headers", "networkUserId", "userId", "timestamp").contains(v)}.toMap
-    val filteredFieldId = Gen.chooseNum(0, fields.size-1).sample.get
-    val fieldId = fields.values.toList(filteredFieldId)
-    val field = fields.keys.toList(filteredFieldId)
-    val fieldValue = payload.productIterator.toList(fieldId)
-    Field(field, fieldValue)
-  }
-  def extract[A <: Product](payload: A, name: String): Option[Field] =
-    payload.getClass.getDeclaredFields.toList.map(_.getName).zip(payload.productIterator.toList).toMap.get(name).map(Field(name, _))
-}
 
 class RecoveryScenarioSpec extends FreeSpec with Inspectors with ScalaCheckPropertyChecks {
   val anyString = "(?U)^.*$"

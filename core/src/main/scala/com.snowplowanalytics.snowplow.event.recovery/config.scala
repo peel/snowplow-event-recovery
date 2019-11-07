@@ -1,5 +1,4 @@
-package com.snowplowanalytics.snowplow
-package event.recovery
+package com.snowplowanalytics.snowplow.event.recovery
 
 import cats.syntax.functor._
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
