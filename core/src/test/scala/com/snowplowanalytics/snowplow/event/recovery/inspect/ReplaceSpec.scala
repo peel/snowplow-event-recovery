@@ -34,7 +34,7 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
           val json     = br.asJson
           val expected = "com.lorem.ipsum.dolor"
           val replaced =
-            replace("(?U)^.*$".some, expected)(Seq("processor", "artifact"))(json)
+            replace("(?U)^.*$".some, expected.asJson)(Seq("processor", "artifact"))(json)
 
           replaced
             .flatMap {
@@ -49,7 +49,7 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
           val json     = br.asJson
           val expected = "com.lorem.ipsum.dolor"
           val replaced =
-            replace(None, expected)(Seq("processor", "artifact"))(json)
+            replace(None, expected.asJson)(Seq("processor", "artifact"))(json)
 
           replaced
             .flatMap {
@@ -65,7 +65,7 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
         val json     = br.asJson
         val expected = Processor("lorem", "ipsum")
         val replaced =
-          replace("(?U)^.*$".some, expected.asJson.noSpaces)(Seq("processor"))(json)
+          replace("(?U)^.*$".some, expected.asJson)(Seq("processor"))(json)
         replaced
           .flatMap {
             _.hcursor.downField("processor").as[Processor]
@@ -75,7 +75,7 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
       }
     }
     "raise for unknown field in base64-encoded parameters" in {
-      val expected = "[]"
+      val expected = parse("[]").right.get
       replace(
         "(?U)^.*$".some,
         expected
@@ -87,7 +87,7 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
       val expected = "[]"
       val replaced = replace(
         "(?U)^.*$".some,
-        expected
+        Vector.empty[String].asJson
       )(Seq("payload", "raw", "parameters", "cx", "schema"))(base64Field)
 
       replaced
@@ -117,8 +117,8 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
     }
   }
   "replace array base64-encoded values" in {
-    val expected = "1"
-    val replaced = replace("(?U)^.*$".some, expected)(
+    val expected = 1
+    val replaced = replace("(?U)^.*$".some, expected.asJson)(
       Seq(
         "payload",
         "raw",
@@ -162,11 +162,11 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
           )
       }
       .right
-      .value should equal(expected.toInt)
+      .value should equal(expected)
   }
-  "replace filtered base64-encoded values" in {
-    val expected = "1"
-    val replaced = replace("(?U)^.*$".some, expected)(
+  "replace filtered base 64-encoded values" in {
+    val expected = 1
+    val replaced = replace("(?U)^.*$".some, expected.asJson)(
       Seq(
         "payload",
         "raw",
@@ -210,10 +210,10 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
           )
       }
       .right
-      .value should equal(expected.toInt)
+      .value should equal(expected)
   }
   "replace url-encoded values" in {
-    val expected = "666"
+    val expected = 666.asJson
     val replaced = replace(
       "(?U)^.*$".some,
       expected
@@ -233,8 +233,7 @@ class ReplaceSpec extends WordSpec with ScalaCheckPropertyChecks with EitherValu
           .flatMap(_.focus.toRight("empty focus"))
       }
       .right
-      .value
-      .noSpaces should equal(expected)
+      .value should equal(expected)
   }
 
 }

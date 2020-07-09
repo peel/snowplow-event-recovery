@@ -95,7 +95,7 @@ object recoverable {
       unrecoverable
     implicit val trackerProtocolViolationsRecovery: Recoverable[TrackerProtocolViolations, Payload.CollectorPayload] =
       recoverable(_.payload)
-    
+
     implicit val cpFormatViolationRecovery: Recoverable[CPFormatViolation, Payload.CollectorPayload] =
       new Recoverable[CPFormatViolation, Payload.CollectorPayload] {
         override def recover(b: CPFormatViolation)(config: List[StepConfig]) =

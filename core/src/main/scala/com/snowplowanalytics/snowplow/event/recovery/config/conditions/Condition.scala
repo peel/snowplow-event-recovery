@@ -35,11 +35,11 @@ case class Condition(
     * Checks fields that are at a lower JSON level
     * ie. $.payload.parameters.aid
     */
-  private[this] def nested(obj: Json, path: String): Option[String] = {
+  private[this] def nested(obj: Json, path: String): Option[Json] = {
     @tailrec
-    def apply(root: ACursor, nodes: Seq[String]): Option[String] = nodes match {
+    def apply(root: ACursor, nodes: Seq[String]): Option[Json] = nodes match {
       case Seq() =>
-        root.focus.flatMap(_.asString)
+        root.focus
       case Seq(h, t @ _*) =>
         apply(root.downField(h), t)
     }

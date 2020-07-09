@@ -79,7 +79,7 @@ object payload {
 
   private[this] val toQuerystring = (l: List[NVP]) => {
     val urlEncode = (str: String) => URLEncoder.encode(str, UTF_8.toString)
-    val show      = (n: NVP) => s"${n.name}=${urlEncode(n.value.getOrElse(""))}"
+    val show      = (n: NVP)      => s"${n.name}=${urlEncode(n.value.getOrElse(""))}"
 
     l.map(show).mkString("&")
   }

@@ -41,7 +41,6 @@ class RecoveryJobSpec extends SparkSpec {
       v: Dataset[SparkResult],
       summary: Summary
     )(implicit encoder: Encoder[String]) = {
-      println(s"$output,$failedOutput,$unrecoverableOutput,$region,$batchSize")
       recovered ++= v
         .filter(_.isInstanceOf[SparkSuccess])
         .map { r =>

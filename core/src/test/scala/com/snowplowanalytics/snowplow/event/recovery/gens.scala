@@ -20,6 +20,7 @@ import java.util.{Base64, UUID}
 import java.util.concurrent.TimeUnit
 
 import io.circe.Json
+import io.circe.syntax._
 import io.circe.literal._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.ScalacheckShapeless._
@@ -121,10 +122,10 @@ object gens {
   )
   implicit val recoveryErrorBadRow: Arbitrary[BadRow.RecoveryError] = Arbitrary(
     for {
-      processor <- processorA.arbitrary
-      error <- nonEmptyString.arbitrary
-      failure <- Gen.option(nonEmptyString.arbitrary)
-      payload <- recoverableBadRowA.arbitrary
+      processor  <- processorA.arbitrary
+      error      <- nonEmptyString.arbitrary
+      failure    <- Gen.option(nonEmptyString.arbitrary)
+      payload    <- recoverableBadRowA.arbitrary
       recoveries <- Gen.choose(1, 3)
     } yield BadRow.RecoveryError(processor, Failure.RecoveryFailure(error, failure), payload, recoveries)
   )
@@ -136,7 +137,8 @@ object gens {
   implicit val castingA     = implicitly[Arbitrary[Casting]]
   implicit val stepConfigA  = implicitly[Arbitrary[StepConfig]]
 
-  implicit val compareA = Arbitrary(valueA.arbitrary.map(Compare(_)))
+  implicit val jsonA: Arbitrary[Json] = Arbitrary(Gen.alphaNumStr.map(_.asJson))
+  implicit val basic    = Vector(Gen.alphaNumStr, Gen.posNum[Double])
   implicit val regexA   = implicitly[Arbitrary[RegularExpression]]
 
   implicit val sizeGtA = implicitly[Arbitrary[Size.Gt]]
@@ -146,9 +148,6 @@ object gens {
   implicit val sizeA   = implicitly[Arbitrary[Size]]
 
   implicit val invalidJsonFormatA = implicitly[Arbitrary[InvalidJsonFormat]]
-  implicit val valueA: Arbitrary[Value] = Arbitrary(
-    Gen.oneOf(Gen.posNum[Long].map(Coproduct[Value](_)), Gen.alphaNumStr.map(Coproduct[Value](_)))
-  )
 
   implicit val matcherA: Arbitrary[Matcher] = Arbitrary(
     Gen.oneOf(regexA.arbitrary, sizeA.arbitrary)
