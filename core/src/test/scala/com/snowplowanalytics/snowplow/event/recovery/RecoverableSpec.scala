@@ -96,6 +96,11 @@ class RecoverableSpec extends WordSpec with Inspectors with ScalaCheckPropertyCh
         withoutQuerystring.right.get.recover(List.empty) should be('left)
       }
     }
+    "handle composite bad row" in {
+      forAll { (b: BadRow.RecoveryError) =>
+        b.recover(List.empty) should be('right)
+      }
+    }
     "handle CPFormatViolation when querystring contains invalid characters" in {
       forAll { (b: BadRow.CPFormatViolation, cp: CollectorPayload) =>
         val fill            = "lorem-ipsum"

@@ -119,6 +119,16 @@ object gens {
   implicit val recoverableBadRowA: Arbitrary[BadRow] = Arbitrary(
     Gen.oneOf(badRowAdapterFailuresA.arbitrary, badRowTrackerProtocolViolationsA.arbitrary)
   )
+  implicit val recoveryErrorBadRow: Arbitrary[BadRow.RecoveryError] = Arbitrary(
+    for {
+      processor <- processorA.arbitrary
+      error <- nonEmptyString.arbitrary
+      failure <- Gen.option(nonEmptyString.arbitrary)
+      payload <- recoverableBadRowA.arbitrary
+      recoveries <- Gen.choose(1, 3)
+    } yield BadRow.RecoveryError(processor, Failure.RecoveryFailure(error, failure), payload, recoveries)
+  )
+
   implicit val uuidGen: Gen[UUID] = Gen.uuid
 
   implicit val replacementA = implicitly[Arbitrary[Replacement]]
